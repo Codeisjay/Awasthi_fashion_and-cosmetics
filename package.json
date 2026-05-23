@@ -1,0 +1,30 @@
+{
+  "name": "ecommerce-analytics-platform",
+  "version": "1.0.0",
+  "description": "Full-stack MERN ecommerce analytics platform with Google OAuth",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "server-dev": "cd server && npm run dev",
+    "client-dev": "cd client && npm run dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ecommerce",
+    "analytics",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb",
+    "google-oauth"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
