@@ -13,7 +13,7 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://awasthi-fashion-and-cosmetics.vercel.app
+        value: https://awasthi-fashion-and-cosmetic.vercel.app
       - key: PORT
         value: 10000
 

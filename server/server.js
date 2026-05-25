@@ -23,39 +23,87 @@ const app = express();
 // Connect to database
 connectDB();
 
-// CORS configuration for Vercel frontend and local development
+// ============================================
+// CORS CONFIGURATION - PRODUCTION & DEVELOPMENT
+// ============================================
+const allowedOrigins = [
+  // Production Vercel frontend
+  'https://awasthi-fashion-and-cosmetic.vercel.app',
+  // Local development with Vite
+  'http://localhost:5173',
+  // Fallback for older setup
+  'http://localhost:3000',
+  // Support for FRONTEND_URL env variable
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove undefined values
+
 const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'https://awasthi-fashion-and-cosmetics.vercel.app',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`[CORS] Blocked request from origin: ${origin}`);
+      callback(new Error('CORS not allowed for this origin'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-JSON-Response'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours
 };
 
-// Middleware
+// ============================================
+// MIDDLEWARE - ORDER IS CRITICAL
+// ============================================
+
+// 1. CORS must be first
 app.use(cors(corsOptions));
+
+// 2. Preflight OPTIONS handler
+app.options('*', cors(corsOptions));
+
+// 3. Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve static files for uploads (API endpoint)
+// 4. Static file serving (uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Log server startup info
+// ============================================
+// LOG SERVER STARTUP INFO
+// ============================================
 if (process.env.NODE_ENV === 'production') {
-  console.log('[Server] Running in PRODUCTION mode - REST API only');
-  console.log('[Server] Frontend served from:', process.env.FRONTEND_URL || 'https://awasthi-fashion-and-cosmetics.vercel.app');
+  console.log('[Server] ========================================');
+  console.log('[Server] Running in PRODUCTION mode');
+  console.log('[Server] Backend URL: ' + (process.env.RENDER_EXTERNAL_URL || 'https://awasthi-fashion-and-cosmetics-1.onrender.com'));
+  console.log('[Server] Frontend URL: ' + (process.env.FRONTEND_URL || 'https://awasthi-fashion-and-cosmetic.vercel.app'));
+  console.log('[Server] CORS Allowed Origins:');
+  allowedOrigins.forEach(origin => console.log('[Server]   - ' + origin));
+  console.log('[Server] ========================================');
 }
 
-// Health check
+// ============================================
+// HEALTH CHECK ENDPOINT
+// ============================================
 app.get('/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'Server is running' });
+  res.status(200).json({ 
+    success: true, 
+    message: 'Server is running',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Seed endpoint - Create demo admin if not exists
+// ============================================
+// SEED ENDPOINT - Create demo admin if not exists
+// ============================================
 app.get('/api/seed', async (req, res) => {
   try {
     // Delete old admin credentials
@@ -98,7 +146,9 @@ app.get('/api/seed', async (req, res) => {
   }
 });
 
-// Seed ML data endpoint
+// ============================================
+// SEED ML DATA ENDPOINT
+// ============================================
 app.get('/api/seed-ml', async (req, res) => {
   try {
     // Get all products
@@ -163,7 +213,9 @@ app.get('/api/seed-ml', async (req, res) => {
   }
 });
 
-// API Routes
+// ============================================
+// API ROUTES
+// ============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', userAuthRoutes);
 app.use('/api/products', productRoutes);
@@ -172,18 +224,32 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ml', mlRoutes);
 app.use('/api/offers', offerRoutes);
 
-// 404 handler
+// ============================================
+// 404 HANDLER
+// ============================================
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
-// Error handler
+// ============================================
+// ERROR HANDLER (MUST BE LAST)
+// ============================================
 app.use(errorHandler);
 
+// ============================================
+// START SERVER
+// ============================================
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`\n[Server] Express server listening on port ${PORT}\n`);
   
   // Start ML scheduler after server starts
   scheduleMLGeneration();
 });
+
+module.exports = app;
