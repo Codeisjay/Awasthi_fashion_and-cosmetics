@@ -1,11 +1,59 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { trackingService } from '../services/api';
 import { Mail, Phone, MapPin, Navigation } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ContactPage = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     trackingService.trackVisit('/contact').catch(err => console.log('Tracking error:', err));
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          recipientEmail: 'awasthr080@gmail.com'
+        })
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+        setTimeout(() => setSubmitted(false), 5000);
+      } else {
+        alert('Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Error sending message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const elegantStyle = {
     fontFamily: '"Playfair Display", Georgia, serif',
@@ -38,7 +86,7 @@ const ContactPage = () => {
               <Mail className="w-8 h-8 text-pink-600" />
             </div>
             <h3 className="text-xl font-semibold mb-2">Email</h3>
-            <p className="text-gray-600">support@awasthifashions.com</p>
+            <p className="text-gray-600">awasthr080@gmail.com</p>
           </div>
 
           <div className="bg-white p-8 rounded-2xl shadow-xl text-center hover:shadow-2xl transition">
@@ -46,7 +94,7 @@ const ContactPage = () => {
               <Phone className="w-8 h-8 text-purple-600" />
             </div>
             <h3 className="text-xl font-semibold mb-2">Phone</h3>
-            <p className="text-gray-600">+91 XXXXX XXXXX</p>
+            <p className="text-gray-600">+91 9305748046</p>
           </div>
 
           <div className="bg-gradient-to-br from-pink-500 to-purple-500 p-8 rounded-2xl shadow-xl text-center text-white hover:shadow-2xl transition">
@@ -162,7 +210,12 @@ const ContactPage = () => {
             <p className="text-gray-600 mt-2">We'd love to hear from you! Drop us a message and we'll get back to you soon.</p>
           </div>
 
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {submitted && (
+              <div className="bg-green-100 border-2 border-green-500 text-green-700 px-4 py-3 rounded-lg">
+                <p className="font-semibold">✓ Message sent successfully! We'll get back to you soon.</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Name</label>
@@ -170,6 +223,9 @@ const ContactPage = () => {
                   type="text"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition"
                   placeholder="Your Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
                 />
               </div>
               <div>
@@ -178,6 +234,9 @@ const ContactPage = () => {
                   type="email"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition"
                   placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
                 />
               </div>
             </div>
@@ -188,6 +247,9 @@ const ContactPage = () => {
                 type="tel"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition"
                 placeholder="Your Phone Number"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                required
               />
             </div>
 
@@ -197,6 +259,9 @@ const ContactPage = () => {
                 type="text"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition"
                 placeholder="What is this about?"
+                value={formData.subject}
+                onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                required
               />
             </div>
 
@@ -206,14 +271,18 @@ const ContactPage = () => {
                 rows={6}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition resize-none"
                 placeholder="Tell us more..."
+                value={formData.message}
+                onChange={(e) => setFormData({...formData, message: e.target.value})}
+                required
               ></textarea>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg hover:shadow-lg transition font-semibold text-lg"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg hover:shadow-lg transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send Message
+              {loading ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         </div>
