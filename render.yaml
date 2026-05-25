@@ -3,9 +3,8 @@ services:
     name: ecommerce-analytics-server
     env: node
     plan: free
-    rootDir: server
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,9 +21,8 @@ services:
     name: ecommerce-ml-service
     env: python
     plan: free
-    rootDir: ml-service
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    buildCommand: cd ml-service && pip install -r requirements.txt
+    startCommand: cd ml-service && python main.py
     envVars:
       - key: MONGODB_URI
         sync: false
