@@ -63,7 +63,7 @@ const ContactPage = () => {
   const mapsLink = 'https://maps.app.goo.gl/vKcf3Hb1ke5hNyMH6';
   const latitude = 26.428867;
   const longitude = 80.2924839;
-  const businessName = 'Awasthi beauty parlour and cosmetics';
+  const businessName = "Awasthi Fashion & Cosmetics";
 
   return (
     <div className="pt-20 xs:pt-24 sm:pt-28 bg-gradient-to-b from-pink-50 via-white to-purple-50 min-h-screen pb-8 xs:pb-12">
@@ -136,7 +136,7 @@ const ContactPage = () => {
             <div className="p-4 xs:p-6 sm:p-8">
               <div className="bg-gray-100 rounded-xl overflow-hidden mb-4 xs:mb-6 shadow-lg">
                 <iframe
-                  src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3560.0542340626!2d${longitude}!3d${latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399c47594be32a7b%3A0xb22ce47c29640c7f!2sAwasthi%20beauty%20parlour%20and%20cosmetics!5e0!3m2!1sen!2sin!4v`}
+                  src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3560.0542340626!2d${longitude}!3d${latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399c47594be32a7b%3A0xb22ce47c29640c7f!2sAwasthi%20Fashion%20%26%20Cosmetics!5e0!3m2!1sen!2sin!4v`}
                   width="100%"
                   height="300"
                   className="w-full"
