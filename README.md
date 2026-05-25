@@ -152,7 +152,7 @@ npm install
 cp .env.example .env
 
 # Update .env
-REACT_APP_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000/api
 
 # Start development server
 npm run dev
@@ -347,7 +347,7 @@ FRONTEND_URL=https://yourdomain.com
 
 ### Client (.env)
 ```
-REACT_APP_API_URL=https://api.yourdomain.com/api
+VITE_API_URL=https://api.yourdomain.com/api
 ```
 
 ### ML Service (.env)

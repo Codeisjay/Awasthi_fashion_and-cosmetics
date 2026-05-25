@@ -10,7 +10,7 @@ load_dotenv()
 
 class MLPipeline:
     def __init__(self):
-        self.mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
+        self.mongodb_uri = os.getenv('MONGODB_URI', 'mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0')
         self.db_name = os.getenv('DB_NAME', 'ecommerce-analytics')
         self.client = None
         self.db = None

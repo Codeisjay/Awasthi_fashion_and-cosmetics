@@ -34,7 +34,7 @@
 ## Step 3: Connect Compass to Local MongoDB
 
 1. Open MongoDB Compass
-2. Connection String should be: `mongodb://localhost:27017`
+2. Connection String should be: `mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0`
 3. Click "Connect"
 4. You should see "admin" database
 
@@ -58,7 +58,7 @@ In Compass, create these collections:
 
 ### Backend (.env)
 ```env
-MONGODB_URI=mongodb://localhost:27017/ecommerce-analytics
+MONGODB_URI=mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0
 PORT=5000
 JWT_SECRET=your-super-secret-jwt-key-123-change-this
 NODE_ENV=development
@@ -67,7 +67,7 @@ FRONTEND_URL=http://localhost:3000
 
 ### ML Service (.env)
 ```env
-MONGODB_URI=mongodb://localhost:27017/ecommerce-analytics
+MONGODB_URI=mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0
 DB_NAME=ecommerce-analytics
 ML_RUN_INTERVAL=3600
 FLASK_ENV=development
@@ -75,7 +75,7 @@ FLASK_ENV=development
 
 ### Frontend (.env)
 ```env
-REACT_APP_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ---
@@ -269,9 +269,9 @@ taskkill /PID <PID> /F
 - Restart backend: `npm run dev`
 
 ### Can't Connect to MongoDB
-- Verify mongodb://localhost:27017 in Compass
-- Check if MongoDB service is running
-- Check firewall settings
+- Verify MongoDB Atlas credentials in .env
+- Check if mongodb+srv://... URI is correct
+- Check firewall/network settings for cloud connectivity
 
 ### ML Pipeline Not Running
 - Check if ml-service is running
@@ -293,7 +293,7 @@ project/
 ├── ml-service/
 │   ├── .env (contains MONGODB_URI)
 │   └── app.py
-└── MongoDB Compass (connect to localhost:27017)
+└── MongoDB Atlas (cloud-based database)
 ```
 
 ---

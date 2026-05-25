@@ -23,11 +23,11 @@ npm run build
 3. Import your Git repository
 4. Select the `client` directory as root
 5. Configure environment variables:
-   - `REACT_APP_API_URL`: Your backend API URL
+   - `VITE_API_URL`: Your backend API URL
 
 #### Environment Variables (Vercel)
 ```
-REACT_APP_API_URL=https://your-backend-url.com/api
+VITE_API_URL=https://your-backend-url.com/api
 ```
 
 #### Deploy
@@ -183,7 +183,7 @@ db.admins.insertOne({
 
 #### Update Backend URL
 - Get Render backend URL
-- Update `REACT_APP_API_URL` in frontend environment
+- Update `VITE_API_URL` in frontend environment
 
 #### Update ML Service URL
 - Get Render ML service URL
@@ -282,7 +282,7 @@ Both Vercel and Render support automatic deployments on Git push:
 - Check MongoDB connection
 
 **Frontend Not Loading API**
-- Verify REACT_APP_API_URL is correct
+- Verify VITE_API_URL is correct
 - Check browser network tab
 - Ensure backend is running
 

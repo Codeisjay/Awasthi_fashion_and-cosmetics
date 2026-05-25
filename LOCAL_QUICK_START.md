@@ -33,7 +33,7 @@ This will:
 
 ### Open MongoDB Compass
 1. Launch MongoDB Compass
-2. Connection: `mongodb://localhost:27017`
+2. Connection: `mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0`
 3. Click "Connect"
 
 ### Create Database
@@ -109,7 +109,7 @@ npm run dev
 Expected output:
 ```
 Server running on port 5000
-MongoDB connected to: mongodb://localhost:27017/ecommerce-analytics
+MongoDB connected to: mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0
 ```
 
 ### Terminal 2: Frontend (React)
@@ -206,7 +206,7 @@ C:\Program Files\MongoDB\Server\5.0\log\mongod.log
 | Frontend | 3000 | http://localhost:3000 |
 | Backend API | 5000 | http://localhost:5000/api |
 | ML Service | 5001 | http://localhost:5001 |
-| MongoDB | 27017 | mongodb://localhost:27017 (Compass) |
+| MongoDB | Cloud | mongodb+srv://... (MongoDB Atlas) |
 
 ## Troubleshooting
 
@@ -244,19 +244,19 @@ Get-Process mongod
 ## Environment Files Location
 
 ```
-.env files are configured for local MongoDB:
+.env files are configured for MongoDB Atlas:
 
 server/.env
-├─ MONGODB_URI=mongodb://localhost:27017/ecommerce-analytics
+├─ MONGODB_URI=mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0
 ├─ PORT=5000
 ├─ JWT_SECRET=ecommerce-local-secret-key-change-in-production
 └─ ...
 
 client/.env
-└─ REACT_APP_API_URL=http://localhost:5000/api
+└─ VITE_API_URL=http://localhost:5000/api
 
 ml-service/.env
-├─ MONGODB_URI=mongodb://localhost:27017/ecommerce-analytics
+├─ MONGODB_URI=mongodb+srv://user:manika4713@cluster0.abckf.mongodb.net/yourDatabaseName?retryWrites=true&w=majority&appName=Cluster0
 ├─ DB_NAME=ecommerce-analytics
 └─ ...
 ```

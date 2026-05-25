@@ -40,7 +40,7 @@ Complete this checklist to get your MERN platform up and running!
 - [ ] Run `npm install`
 - [ ] Copy `.env.example` to `.env`
 - [ ] Fill in environment variables:
-  - [ ] REACT_APP_API_URL (http://localhost:5000/api)
+  - [ ] VITE_API_URL (http://localhost:5000/api)
 - [ ] Run `npm run dev`
 - [ ] Verify: Browser opens http://localhost:3000
 
@@ -116,7 +116,7 @@ Complete this checklist to get your MERN platform up and running!
   - [ ] Verify: https://ml-url/health returns 200
   - [ ] Test: ML predictions generate
 - [ ] Update environment variables
-  - [ ] Frontend: REACT_APP_API_URL
+  - [ ] Frontend: VITE_API_URL
   - [ ] Backend: FRONTEND_URL, MONGODB_URI
   - [ ] ML: MONGODB_URI
 - [ ] Test end-to-end functionality
@@ -162,7 +162,7 @@ Complete this checklist to get your MERN platform up and running!
 ## Troubleshooting Quick Reference
 - MongoDB won't connect → Check connection string, IP whitelist
 - CORS errors → Check FRONTEND_URL in backend
-- Frontend can't reach API → Check REACT_APP_API_URL
+- Frontend can't reach API → Check VITE_API_URL
 - ML not running → Check Python environment, dependencies
 - Port conflicts → Change port or kill existing process
 
