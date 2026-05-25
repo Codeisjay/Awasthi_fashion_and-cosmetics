@@ -24,49 +24,54 @@ const app = express();
 connectDB();
 
 // ============================================
-// CORS CONFIGURATION - PRODUCTION & DEVELOPMENT
+// CORS CONFIGURATION - WILDCARD VERCEL SUPPORT
 // ============================================
-const allowedOrigins = [
-  // Production Vercel frontend
-  'https://awasthi-fashion-and-cosmetic.vercel.app',
-  // Local development with Vite
-  'http://localhost:5173',
-  // Fallback for older setup
-  'http://localhost:3000',
-  // Support for FRONTEND_URL env variable
-  process.env.FRONTEND_URL
-].filter(Boolean); // Remove undefined values
+// Allow all Vercel deployment URLs (including preview deployments)
+// and localhost for local development
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
     if (!origin) {
       return callback(null, true);
     }
-    
-    if (allowedOrigins.includes(origin)) {
+
+    // Remove trailing slash for comparison
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+    // Check if origin is allowed
+    const isAllowed = 
+      // Allow all Vercel deployment URLs (production and preview)
+      normalizedOrigin.endsWith('.vercel.app') ||
+      // Allow localhost development servers
+      normalizedOrigin === 'http://localhost:3000' ||
+      normalizedOrigin === 'http://localhost:5173' ||
+      normalizedOrigin === 'http://127.0.0.1:3000' ||
+      normalizedOrigin === 'http://127.0.0.1:5173';
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      console.log(`[CORS] Blocked request from origin: ${origin}`);
-      callback(new Error('CORS not allowed for this origin'));
+      console.warn(`[CORS] ❌ Blocked request from origin: ${origin}`);
+      callback(new Error('CORS policy: Origin not allowed'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'X-JSON-Response'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-JSON-Response', 'X-Total-Count'],
   optionsSuccessStatus: 200,
-  maxAge: 86400 // 24 hours
+  maxAge: 3600 // 1 hour cache for preflight
 };
 
 // ============================================
 // MIDDLEWARE - ORDER IS CRITICAL
 // ============================================
 
-// 1. CORS must be first
+// 1. CORS middleware - MUST be first before all other middleware
 app.use(cors(corsOptions));
 
-// 2. Preflight OPTIONS handler
+// 2. Explicit OPTIONS handler for preflight requests
 app.options('*', cors(corsOptions));
 
 // 3. Body parsers
@@ -80,13 +85,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // LOG SERVER STARTUP INFO
 // ============================================
 if (process.env.NODE_ENV === 'production') {
-  console.log('[Server] ========================================');
+  console.log('\n[Server] ========================================');
   console.log('[Server] Running in PRODUCTION mode');
-  console.log('[Server] Backend URL: ' + (process.env.RENDER_EXTERNAL_URL || 'https://awasthi-fashion-and-cosmetics-1.onrender.com'));
-  console.log('[Server] Frontend URL: ' + (process.env.FRONTEND_URL || 'https://awasthi-fashion-and-cosmetic.vercel.app'));
-  console.log('[Server] CORS Allowed Origins:');
-  allowedOrigins.forEach(origin => console.log('[Server]   - ' + origin));
-  console.log('[Server] ========================================');
+  console.log('[Server] Backend URL: https://awasthi-fashion-and-cosmetics-1.onrender.com');
+  console.log('[Server] CORS Policy:');
+  console.log('[Server]   ✓ All *.vercel.app domains (production & preview)');
+  console.log('[Server]   ✓ http://localhost:3000 (local dev)');
+  console.log('[Server]   ✓ http://localhost:5173 (Vite dev)');
+  console.log('[Server]   ✓ Requests with no origin (mobile apps, CLI tools)');
+  console.log('[Server] ========================================\n');
 }
 
 // ============================================
