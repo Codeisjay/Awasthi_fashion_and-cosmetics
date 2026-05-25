@@ -3,8 +3,9 @@ services:
     name: ecommerce-analytics-server
     env: node
     plan: free
-    buildCommand: cd server && npm install
-    startCommand: cd server && npm start
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -13,18 +14,23 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://your-frontend-url.onrender.com
+        value: https://awasthi-fashion-cosmetics.vercel.app
       - key: PORT
         value: 5000
 
-  - type: web
-    name: ecommerce-analytics-client
-    env: node
+  - type: background_worker
+    name: ecommerce-ml-service
+    env: python
     plan: free
-    buildCommand: cd client && npm install && npm run build
-    startCommand: cd client && npm run preview
+    rootDir: ml-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
     envVars:
-      - key: VITE_API_URL
-        value: https://your-backend-url.onrender.com/api
-      - key: VITE_GOOGLE_CLIENT_ID
+      - key: MONGODB_URI
         sync: false
+      - key: DB_NAME
+        value: ecommerce-analytics
+      - key: ML_RUN_INTERVAL
+        value: 3600
+      - key: FLASK_ENV
+        value: production
