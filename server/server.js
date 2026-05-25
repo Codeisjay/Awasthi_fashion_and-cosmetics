@@ -32,11 +32,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Serve static files for uploads
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('../client/dist'));
+  const clientDistPath = path.join(__dirname, '../client/dist');
+  app.use(express.static(clientDistPath));
+  console.log(`[Server] Serving static files from: ${clientDistPath}`);
 }
 
 // Health check
@@ -163,8 +165,9 @@ app.use('/api/offers', offerRoutes);
 
 // Fallback to frontend for SPA routing in production
 if (process.env.NODE_ENV === 'production') {
+  const clientIndexPath = path.join(__dirname, '../client/dist/index.html');
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
+    res.sendFile(clientIndexPath);
   });
 }
 
