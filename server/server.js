@@ -23,22 +23,31 @@ const app = express();
 // Connect to database
 connectDB();
 
+// CORS configuration for Vercel frontend and local development
+const corsOptions = {
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://awasthi-fashion-and-cosmetics.vercel.app',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve static files for uploads
+// Serve static files for uploads (API endpoint)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve frontend static files in production
+// Log server startup info
 if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = path.join(__dirname, '../client/dist');
-  app.use(express.static(clientDistPath));
-  console.log(`[Server] Serving static files from: ${clientDistPath}`);
+  console.log('[Server] Running in PRODUCTION mode - REST API only');
+  console.log('[Server] Frontend served from:', process.env.FRONTEND_URL || 'https://awasthi-fashion-and-cosmetics.vercel.app');
 }
 
 // Health check
@@ -162,14 +171,6 @@ app.use('/api/track', trackingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ml', mlRoutes);
 app.use('/api/offers', offerRoutes);
-
-// Fallback to frontend for SPA routing in production
-if (process.env.NODE_ENV === 'production') {
-  const clientIndexPath = path.join(__dirname, '../client/dist/index.html');
-  app.get('*', (req, res) => {
-    res.sendFile(clientIndexPath);
-  });
-}
 
 // 404 handler
 app.use((req, res) => {

@@ -3,7 +3,7 @@ services:
     name: ecommerce-analytics-server
     env: node
     plan: free
-    buildCommand: npm install --prefix client && npm run build --prefix client && npm install --prefix server
+    buildCommand: npm install --prefix server
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
