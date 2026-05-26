@@ -58,16 +58,22 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
   console.log('\n╔════════════════════════════════════════════════════════╗');
   console.log('║          [TRACKING CLICK] Request Received            ║');
   console.log('╚════════════════════════════════════════════════════════╝');
-  console.log('[Tracking] Request body:', JSON.stringify({ productId, sessionId, device, browser }, null, 2));
-  console.log('[Tracking] Database connection state:', require('mongoose').connection.readyState);
+  console.log('[Tracking] Full request body:', JSON.stringify(req.body, null, 2));
+  console.log('[Tracking] Request method:', req.method);
+  console.log('[Tracking] Request path:', req.path);
+  console.log('[Tracking] Content-Type:', req.headers['content-type']);
+  
+  // Check database connection
+  const mongooseConnection = require('mongoose').connection;
+  console.log('[Tracking] Database connection state:', mongooseConnection.readyState, '(0=disconnected, 1=connected, 2=connecting, 3=disconnecting)');
 
   if (!productId) {
-    console.warn('[Tracking] ❌ Missing productId');
+    console.warn('[Tracking] ❌ Missing productId in request body');
     return res.status(400).json({ success: false, message: 'productId is required' });
   }
 
   if (!sessionId) {
-    console.warn('[Tracking] ❌ Missing sessionId');
+    console.warn('[Tracking] ❌ Missing sessionId in request body');
     return res.status(400).json({ success: false, message: 'sessionId is required' });
   }
 
@@ -93,22 +99,24 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
       ipAddress: ipAddress || null
     };
 
-    console.log('[Tracking] Creating click event:', JSON.stringify(clickData, null, 2));
+    console.log('[Tracking] Attempting to create click event with data:', JSON.stringify(clickData, null, 2));
 
     const clickEvent = await ClickEvent.create(clickData);
-    console.log('[Tracking] ✅ Click event created successfully:', clickEvent._id);
-    console.log('[Tracking] Full saved click data:', JSON.stringify(clickEvent, null, 2));
+    console.log('[Tracking] ✅ Click event created successfully');
+    console.log('[Tracking] Created click ID:', clickEvent._id);
+    console.log('[Tracking] Saved click document:', JSON.stringify(clickEvent.toObject(), null, 2));
 
     // Update product clicks count
-    console.log('[Tracking] Looking for product:', productId);
+    console.log('[Tracking] Querying for product:', productId);
     const product = await Product.findById(productId);
+    
     if (product) {
       const oldClicks = product.clicks || 0;
       product.clicks = oldClicks + 1;
       await product.save();
       console.log('[Tracking] ✅ Product clicks updated from', oldClicks, 'to', product.clicks);
     } else {
-      console.warn('[Tracking] ⚠️ Product not found:', productId);
+      console.warn('[Tracking] ⚠️ Product not found for ID:', productId);
     }
 
     // Optionally update visitor
@@ -127,7 +135,13 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Click tracked successfully',
-      clickEvent,
+      clickEvent: {
+        id: clickEvent._id,
+        productId: clickEvent.productId,
+        sessionId: clickEvent.sessionId,
+        timestamp: clickEvent.timestamp,
+        device: clickEvent.device
+      },
       verification: {
         saved: true,
         productClicks: product?.clicks || 0
@@ -140,15 +154,16 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
     console.error('[Tracking] ❌ Error message:', error.message);
     console.error('[Tracking] Error name:', error.name);
     console.error('[Tracking] Error code:', error.code);
-    console.error('[Tracking] Error details:', error.errors || error);
-    console.error('[Tracking] Stack:', error.stack);
+    console.error('[Tracking] Full error:', error);
     
+    // Return error to client
     res.status(500).json({
       success: false,
       message: 'Failed to track click',
       error: error.message,
       errorName: error.name,
-      errorCode: error.code
+      errorCode: error.code,
+      timestamp: new Date().toISOString()
     });
   }
 });
