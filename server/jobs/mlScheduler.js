@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const Product = require('../models/Product');
+const { Product } = require('../models/Product');
 const MLPrediction = require('../models/MLPrediction');
 
 /**

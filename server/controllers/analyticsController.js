@@ -1,6 +1,6 @@
 const ClickEvent = require('../models/ClickEvent');
 const Visitor = require('../models/Visitor');
-const Product = require('../models/Product');
+const { Product } = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
 
 // @route   GET /api/analytics/overview

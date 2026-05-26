@@ -1,5 +1,5 @@
 const Offer = require('../models/Offer');
-const Product = require('../models/Product');
+const { Product } = require('../models/Product');
 
 // ============================================
 // OFFER SERVICE UTILITIES

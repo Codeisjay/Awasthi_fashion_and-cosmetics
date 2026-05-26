@@ -1,7 +1,7 @@
 // ML Service - ML Predictions and Recommendations
 
 const MLPrediction = require('../models/MLPrediction');
-const Product = require('../models/Product');
+const { Product } = require('../models/Product');
 
 /**
  * Get all ML predictions

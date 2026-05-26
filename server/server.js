@@ -5,7 +5,7 @@ const cors = require('cors');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const Admin = require('./models/Admin');
-const Product = require('./models/Product');
+const { Product } = require('./models/Product');
 const MLPrediction = require('./models/MLPrediction');
 const { scheduleMLGeneration } = require('./jobs/mlScheduler');
 

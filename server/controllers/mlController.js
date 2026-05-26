@@ -1,5 +1,5 @@
 const MLPrediction = require('../models/MLPrediction');
-const Product = require('../models/Product');
+const { Product } = require('../models/Product');
 const asyncHandler = require('../middleware/asyncHandler');
 
 // @route   GET /api/ml/recommendations
