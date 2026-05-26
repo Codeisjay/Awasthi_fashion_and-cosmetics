@@ -117,3 +117,71 @@ exports.updatePrediction = asyncHandler(async (req, res, next) => {
     prediction
   });
 });
+
+// @route   POST /api/ml/generate
+// @desc    Manually trigger ML prediction generation
+// @access  Private (Admin)
+exports.generateMLPredictions = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║       [ML] Manual ML Prediction Trigger Started       ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    
+    const products = await Product.find();
+    console.log(`[ML] Found ${products.length} products`);
+    
+    if (products.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No products found to generate predictions'
+      });
+    }
+
+    const predictions = products.map((product) => {
+      const clicks = product.clicks || 0;
+      
+      let predictedDemand = 'medium';
+      if (clicks > 20) predictedDemand = 'high';
+      if (clicks < 5) predictedDemand = 'low';
+
+      let recommendation = 'maintain';
+      if (clicks > 20) recommendation = 'promote';
+      if (clicks < 3) recommendation = 'discontinue';
+      if (clicks > 10 && clicks <= 20) recommendation = 'maintain';
+      if (clicks >= 3 && clicks <= 10) recommendation = 'reduce';
+
+      const randomFactor = Math.random();
+      const isIncreasing = clicks > 10 || randomFactor > 0.4;
+      const trendScore = Math.min(100, Math.floor(clicks * 2 + randomFactor * 30));
+
+      return {
+        productId: product._id,
+        predictedDemand,
+        recommendation,
+        isIncreasing,
+        trendScore: Math.max(0, Math.min(100, trendScore)),
+        confidence: 0.75 + Math.random() * 0.25,
+        predictedClicks: Math.floor(clicks * (1 + (randomFactor - 0.5) * 0.3)),
+        generatedAt: new Date()
+      };
+    });
+
+    await MLPrediction.deleteMany({});
+    const result = await MLPrediction.insertMany(predictions);
+    console.log(`[ML] ✅ Generated ${result.length} ML predictions`);
+
+    res.status(201).json({
+      success: true,
+      message: `Generated ML predictions for ${result.length} products`,
+      count: result.length,
+      predictions: result.slice(0, 5)
+    });
+  } catch (error) {
+    console.error('[ML] ❌ Error generating predictions:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate predictions',
+      error: error.message
+    });
+  }
+});
