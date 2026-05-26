@@ -41,14 +41,29 @@ const ProductsPage = () => {
   };
 
   const handleProductClick = async (product) => {
+    // Validate meesho link exists
+    if (!product.meeshoLink || product.meeshoLink.trim() === '') {
+      addNotification('Meesho link not available for this product', 'error');
+      console.error('Product missing meeshoLink:', product);
+      return;
+    }
+
+    let meeshoUrl = product.meeshoLink.trim();
+    
+    // Ensure URL has protocol
+    if (!meeshoUrl.startsWith('http://') && !meeshoUrl.startsWith('https://')) {
+      meeshoUrl = 'https://' + meeshoUrl;
+    }
+
     try {
       await trackingService.trackClick(product._id);
-      window.location.href = product.meeshoLink;
     } catch (error) {
       console.error('Tracking error:', error);
-      // Redirect anyway if tracking fails
-      window.location.href = product.meeshoLink;
+      // Continue with redirect even if tracking fails
     }
+
+    // Open link in new tab
+    window.open(meeshoUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleCategoryChange = (cat) => {
