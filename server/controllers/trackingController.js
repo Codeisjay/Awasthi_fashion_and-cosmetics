@@ -68,18 +68,28 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
   }
 
   try {
+    // Validate and normalize device to enum values
+    const validDevices = ['mobile', 'tablet', 'desktop'];
+    let normalizedDevice = (device || '').toLowerCase().trim();
+    
+    // Default to 'desktop' if device is not one of the valid enum values
+    if (!validDevices.includes(normalizedDevice)) {
+      console.warn('[Tracking] Invalid device value:', device, '- defaulting to desktop');
+      normalizedDevice = 'desktop';
+    }
+
     // Create click event with all available data
     const clickData = {
       productId,
       sessionId,
       timestamp: new Date(),
-      device: device || 'unknown',
-      browser: browser || 'unknown',
+      device: normalizedDevice,
+      browser: browser || 'Unknown',
       userAgent: userAgent || null,
       ipAddress: ipAddress || null
     };
 
-    console.log('[Tracking] Creating click event:', clickData);
+    console.log('[Tracking] Creating click event with normalized data:', clickData);
 
     const clickEvent = await ClickEvent.create(clickData);
     console.log('[Tracking] Click event created successfully:', clickEvent._id);
@@ -110,7 +120,11 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
     });
   } catch (error) {
     console.error('[Tracking] Error tracking click:', error.message);
-    throw error;
+    console.error('[Tracking] Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to track click: ' + error.message
+    });
   }
 });
 

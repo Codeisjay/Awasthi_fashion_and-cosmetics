@@ -19,6 +19,7 @@ const clickEventSchema = new mongoose.Schema(
     device: {
       type: String,
       enum: ['mobile', 'tablet', 'desktop'],
+      default: 'desktop',
       required: true
     },
     browser: {

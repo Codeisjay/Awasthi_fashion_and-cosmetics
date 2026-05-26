@@ -56,9 +56,21 @@ const ProductsPage = () => {
     }
 
     // Track click - don't wait for response
+    console.log('[ProductsPage] Tracking click for product:', product._id);
+    console.log('[ProductsPage] Device info:', {
+      userAgent: navigator.userAgent,
+      device: /mobile/i.test(navigator.userAgent) ? 'mobile' : /tablet/i.test(navigator.userAgent) ? 'tablet' : 'desktop'
+    });
+    
     trackingService.trackClick(product._id)
-      .then(() => console.log('[ProductsPage] Click tracked successfully for:', product._id))
-      .catch((error) => console.error('[ProductsPage] Tracking error:', error));
+      .then(() => {
+        console.log('[ProductsPage] ✓ Click tracked successfully for:', product._id);
+        addNotification('Click recorded', 'success');
+      })
+      .catch((error) => {
+        console.error('[ProductsPage] ✗ Tracking error:', error);
+        console.error('[ProductsPage] Error response:', error.response?.data);
+      });
 
     // Open link in same tab (more reliable)
     setTimeout(() => {
