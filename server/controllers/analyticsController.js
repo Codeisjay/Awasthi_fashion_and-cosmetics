@@ -7,37 +7,69 @@ const asyncHandler = require('../middleware/asyncHandler');
 // @desc    Get analytics overview
 // @access  Private (Admin)
 exports.getOverview = asyncHandler(async (req, res, next) => {
-  // Total visitors
-  const totalVisitors = await Visitor.countDocuments();
+  try {
+    console.log('[Analytics] Fetching overview data...');
 
-  // Total clicks
-  const totalClicks = await ClickEvent.countDocuments();
+    // Total visitors
+    const totalVisitors = await Visitor.countDocuments();
+    console.log('[Analytics] Total Visitors:', totalVisitors);
 
-  // Total products
-  const totalProducts = await Product.countDocuments({ isActive: true });
+    // Total clicks
+    const totalClicks = await ClickEvent.countDocuments();
+    console.log('[Analytics] Total Clicks:', totalClicks);
 
-  // Today's visitors
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayVisitors = await Visitor.countDocuments({ visitTime: { $gte: today } });
+    // Total products
+    const totalProducts = await Product.countDocuments({ isActive: true });
+    console.log('[Analytics] Total Products:', totalProducts);
 
-  // Most clicked product
-  const mostClicked = await Product.findOne().sort({ clicks: -1 });
+    // Today's visitors - check both visitTime and createdAt
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Least clicked product
-  const leastClicked = await Product.findOne({ clicks: { $gt: 0 } }).sort({ clicks: 1 });
+    const todayVisitors = await Visitor.countDocuments({
+      $or: [
+        { visitTime: { $gte: today, $lt: tomorrow } },
+        { createdAt: { $gte: today, $lt: tomorrow } },
+        { lastVisit: { $gte: today, $lt: tomorrow } }
+      ]
+    });
+    console.log('[Analytics] Today Visitors:', todayVisitors);
 
-  res.status(200).json({
-    success: true,
-    overview: {
-      totalVisitors,
-      totalClicks,
-      totalProducts,
-      todayVisitors,
-      mostClickedProduct: mostClicked,
-      leastClickedProduct: leastClicked
-    }
-  });
+    // Debug: Check visitor counts by field
+    const visitTimeCount = await Visitor.countDocuments({ visitTime: { $gte: today } });
+    const createdAtCount = await Visitor.countDocuments({ createdAt: { $gte: today } });
+    const lastVisitCount = await Visitor.countDocuments({ lastVisit: { $gte: today } });
+    console.log('[Analytics] Debug - visitTime:', visitTimeCount, 'createdAt:', createdAtCount, 'lastVisit:', lastVisitCount);
+
+    // Debug: Check if there are ANY visitors and clicks
+    const allVisitors = await Visitor.find().limit(3).sort({ createdAt: -1 });
+    const allClicks = await ClickEvent.find().limit(3).sort({ createdAt: -1 });
+    console.log('[Analytics] Recent visitors:', allVisitors.length);
+    console.log('[Analytics] Recent clicks:', allClicks.length);
+
+    // Most clicked product
+    const mostClicked = await Product.findOne().sort({ clicks: -1 });
+
+    // Least clicked product
+    const leastClicked = await Product.findOne({ clicks: { $gt: 0 } }).sort({ clicks: 1 });
+
+    res.status(200).json({
+      success: true,
+      overview: {
+        totalVisitors,
+        totalClicks,
+        totalProducts,
+        todayVisitors,
+        mostClickedProduct: mostClicked,
+        leastClickedProduct: leastClicked
+      }
+    });
+  } catch (error) {
+    console.error('[Analytics] Error fetching overview:', error);
+    next(error);
+  }
 });
 
 // @route   GET /api/analytics/traffic

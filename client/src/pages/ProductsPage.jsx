@@ -55,15 +55,15 @@ const ProductsPage = () => {
       meeshoUrl = 'https://' + meeshoUrl;
     }
 
-    try {
-      await trackingService.trackClick(product._id);
-    } catch (error) {
-      console.error('Tracking error:', error);
-      // Continue with redirect even if tracking fails
-    }
+    // Track click - don't wait for response
+    trackingService.trackClick(product._id)
+      .then(() => console.log('[ProductsPage] Click tracked successfully for:', product._id))
+      .catch((error) => console.error('[ProductsPage] Tracking error:', error));
 
-    // Open link in new tab
-    window.open(meeshoUrl, '_blank', 'noopener,noreferrer');
+    // Open link in same tab (more reliable)
+    setTimeout(() => {
+      window.location.href = meeshoUrl;
+    }, 100);
   };
 
   const handleCategoryChange = (cat) => {

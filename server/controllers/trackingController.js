@@ -15,6 +15,10 @@ exports.trackVisit = asyncHandler(async (req, res, next) => {
     sessionId = uuidv4();
   }
 
+  console.log('[Tracking] Visit - sessionId:', sessionId, 'page:', page);
+
+  const now = new Date();
+
   // Use findOneAndUpdate with upsert to prevent race conditions and duplicate key errors
   const visitor = await Visitor.findOneAndUpdate(
     { sessionId },
@@ -24,7 +28,8 @@ exports.trackVisit = asyncHandler(async (req, res, next) => {
         browser,
         userAgent,
         ipAddress,
-        lastVisit: new Date(),
+        lastVisit: now,
+        visitTime: now, // Ensure visitTime is set on both create and update
         isReturning: true
       },
       $addToSet: { pagesVisited: page }
@@ -35,6 +40,8 @@ exports.trackVisit = asyncHandler(async (req, res, next) => {
       runValidators: true
     }
   );
+
+  console.log('[Tracking] Visitor saved/updated:', visitor._id, 'visitTime:', visitor.visitTime);
 
   res.status(200).json({
     success: true,
@@ -48,27 +55,63 @@ exports.trackVisit = asyncHandler(async (req, res, next) => {
 exports.trackClick = asyncHandler(async (req, res, next) => {
   const { productId, sessionId, device, browser, userAgent, ipAddress } = req.body;
 
-  if (!productId || !sessionId) {
-    return res.status(400).json({ success: false, message: 'productId and sessionId are required' });
+  console.log('[Tracking] Click - Request body:', { productId, sessionId, device, browser });
+
+  if (!productId) {
+    console.warn('[Tracking] Missing productId');
+    return res.status(400).json({ success: false, message: 'productId is required' });
   }
 
-  // Create click event
-  const clickEvent = await ClickEvent.create({
-    productId,
-    sessionId,
-    device,
-    browser,
-    userAgent,
-    ipAddress
-  });
+  if (!sessionId) {
+    console.warn('[Tracking] Missing sessionId');
+    return res.status(400).json({ success: false, message: 'sessionId is required' });
+  }
 
-  // Update product clicks
-  await Product.findByIdAndUpdate(productId, { $inc: { clicks: 1 } });
+  try {
+    // Create click event with all available data
+    const clickData = {
+      productId,
+      sessionId,
+      timestamp: new Date(),
+      device: device || 'unknown',
+      browser: browser || 'unknown',
+      userAgent: userAgent || null,
+      ipAddress: ipAddress || null
+    };
 
-  res.status(201).json({
-    success: true,
-    clickEvent
-  });
+    console.log('[Tracking] Creating click event:', clickData);
+
+    const clickEvent = await ClickEvent.create(clickData);
+    console.log('[Tracking] Click event created successfully:', clickEvent._id);
+
+    // Update product clicks count
+    const product = await Product.findById(productId);
+    if (product) {
+      product.clicks = (product.clicks || 0) + 1;
+      await product.save();
+      console.log('[Tracking] Product clicks updated to:', product.clicks);
+    } else {
+      console.warn('[Tracking] Product not found:', productId);
+    }
+
+    // Optionally update visitor
+    if (sessionId) {
+      await Visitor.findOneAndUpdate(
+        { sessionId },
+        { $push: { pagesVisited: `product-click-${productId}` } },
+        { new: true }
+      ).catch(err => console.log('[Tracking] Visitor update skipped:', err.message));
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Click tracked successfully',
+      clickEvent
+    });
+  } catch (error) {
+    console.error('[Tracking] Error tracking click:', error.message);
+    throw error;
+  }
 });
 
 // @route   GET /api/track/clicks/:productId
