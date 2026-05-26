@@ -22,27 +22,14 @@ const generateRequestId = () => ++requestIdCounter;
 // ═══════════════════════════════════════════════════════════════
 // TRACKING REQUEST DELAY
 // ═══════════════════════════════════════════════════════════════
-const trackingRequestQueue = [];
-let isProcessingTracking = false;
-
 const delayTrackingRequest = (config) => {
+  // Simple delay: wait 500ms before allowing request through
   return new Promise((resolve) => {
-    trackingRequestQueue.push(() => {
-      setTimeout(resolve, 1000); // Delay tracking requests by 1 second
-    });
-    processTrackingQueue();
+    setTimeout(() => {
+      console.log(`[${config.requestId}] Tracking request ready to send`);
+      resolve();
+    }, 500);
   });
-};
-
-const processTrackingQueue = async () => {
-  if (isProcessingTracking || trackingRequestQueue.length === 0) return;
-  
-  isProcessingTracking = true;
-  while (trackingRequestQueue.length > 0) {
-    const task = trackingRequestQueue.shift();
-    await new Promise(resolve => task(() => resolve()));
-  }
-  isProcessingTracking = false;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -73,7 +60,14 @@ apiClient.interceptors.request.use((config) => {
   
   // Log request (only in development)
   if (import.meta.env.DEV) {
-    console.log(`[${config.requestId}] ${config.method.toUpperCase()} ${config.url}`);
+    const isTrackingRequest = config.url.includes('/track/');
+    const logMessage = `[${config.requestId}] ${config.method.toUpperCase()} ${config.url}`;
+    if (isTrackingRequest) {
+      console.log(`${logMessage} (TRACKING REQUEST)`);
+      console.log(`[${config.requestId}] Data:`, config.data);
+    } else {
+      console.log(logMessage);
+    }
   }
   
   // Delay tracking requests
@@ -94,12 +88,20 @@ apiClient.interceptors.response.use(
   (response) => {
     // Log response (only in development)
     if (import.meta.env.DEV) {
-      console.log(`[${response.config.requestId}] ${response.status} OK (${response.statusText})`);
+      const isTrackingResponse = response.config?.url?.includes('/track/');
+      const logMessage = `[${response.config?.requestId}] ${response.status} OK (${response.statusText})`;
+      if (isTrackingResponse) {
+        console.log(`${logMessage} (TRACKING RESPONSE)`);
+        console.log(`[${response.config?.requestId}] Response Data:`, response.data);
+      } else {
+        console.log(logMessage);
+      }
     }
     return response;
   },
   (error) => {
     const requestId = error.config?.requestId || 'UNKNOWN';
+    const isTrackingError = error.config?.url?.includes('/track/');
     
     // Enhance error message
     if (error.response?.data?.message) {
@@ -110,11 +112,21 @@ apiClient.interceptors.response.use(
     
     // Log error (only in development)
     if (import.meta.env.DEV) {
-      console.error(`[${requestId}] ${error.response?.status || 'NETWORK'} ERROR`, {
-        status: error.response?.status,
-        message: error.response?.data?.message || error.message,
-        code: error.code
-      });
+      if (isTrackingError) {
+        console.error(`\n╔════════════════════════════════════════════════════════╗`);
+        console.error(`║     [${requestId}] TRACKING REQUEST ERROR          ║`);
+        console.error(`╚════════════════════════════════════════════════════════╝`);
+        console.error(`Status: ${error.response?.status || 'NETWORK ERROR'}`);
+        console.error(`Message: ${error.response?.data?.message || error.message}`);
+        console.error(`Code: ${error.code}`);
+        console.error(`Full Error:`, error.response?.data || error);
+      } else {
+        console.error(`[${requestId}] ${error.response?.status || 'NETWORK'} ERROR`, {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+          code: error.code
+        });
+      }
     }
     
     return Promise.reject(error);
@@ -192,20 +204,44 @@ export const trackingService = {
   trackVisit: (page) => {
     const sessionId = getSessionId();
     const deviceInfo = getDeviceInfo();
-    return apiClient.post('/track/visit', {
+    const payload = {
       sessionId,
       page,
       ...deviceInfo
-    });
+    };
+    console.log('[API] trackVisit payload:', JSON.stringify(payload, null, 2));
+    return apiClient.post('/track/visit', payload);
   },
   trackClick: (productId) => {
     const sessionId = getSessionId();
     const deviceInfo = getDeviceInfo();
-    return apiClient.post('/track/click', {
+    const payload = {
       productId,
       sessionId,
       ...deviceInfo
-    });
+    };
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║         [API SERVICE] Track Click Request            ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    console.log('[API] Product ID:', productId);
+    console.log('[API] Session ID:', sessionId);
+    console.log('[API] Device Info:', JSON.stringify(deviceInfo, null, 2));
+    console.log('[API] Full payload:', JSON.stringify(payload, null, 2));
+    console.log('[API] Request will be sent to:', apiClient.defaults.baseURL + '/track/click\n');
+    
+    return apiClient.post('/track/click', payload)
+      .then(response => {
+        console.log('[API] ✅ trackClick response:', JSON.stringify(response.data, null, 2));
+        return response;
+      })
+      .catch(error => {
+        console.error('[API] ❌ trackClick error:', {
+          status: error.response?.status,
+          message: error.response?.data?.message,
+          error: error.message
+        });
+        throw error;
+      });
   },
   getProductClicks: (productId) =>
     apiClient.get(`/track/clicks/${productId}`)
