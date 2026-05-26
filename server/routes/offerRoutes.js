@@ -48,13 +48,13 @@ router.post('/apply', applyOffer);
 router.post('/upload-image', protect, adminOnly, upload, uploadOfferImage);
 
 // Get offer analytics (must be BEFORE /:id route)
-router.get('/admin/analytics', protect, adminOnly, getOfferAnalytics);
+router.get('/analytics', protect, adminOnly, getOfferAnalytics);
 
 // Auto expire offers (can be called by cron job)
-router.post('/admin/auto-expire', protect, adminOnly, autoExpireOffers);
+router.post('/auto-expire', protect, adminOnly, autoExpireOffers);
 
 // Auto activate scheduled offers (can be called by cron job)
-router.post('/admin/auto-activate', protect, adminOnly, autoActivateScheduled);
+router.post('/auto-activate', protect, adminOnly, autoActivateScheduled);
 
 // Create offer
 router.post('/', protect, adminOnly, createOffer);
