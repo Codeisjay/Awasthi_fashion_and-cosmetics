@@ -30,8 +30,21 @@ const ProductCard = ({ product, onViewClick }) => {
           {product.description}
         </p>
 
-        {/* Stock Status */}
-        <div className="flex items-center justify-end mb-3 xs:mb-4">
+        {/* Price and Stock Status Row */}
+        <div className="flex items-center justify-between mb-3 xs:mb-4">
+          {/* Price */}
+          <div className="flex flex-col">
+            <span className="text-lg xs:text-xl font-bold text-gray-900">
+              ₹{product.price?.toFixed(2) || 'N/A'}
+            </span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-xs xs:text-sm text-gray-500 line-through">
+                ₹{product.originalPrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          {/* Stock Status */}
           <span className={`text-xs font-semibold px-2 xs:px-3 py-1 rounded-full transition-all duration-300 whitespace-nowrap ${
             product.stockStatus === 'in-stock'
               ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 shadow-sm'

@@ -357,6 +357,47 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/contact', contactRoutes);
 
 // ============================================
+// ============================================
+// DEBUG ENDPOINT - Check tracking data
+// ============================================
+app.get('/api/debug/tracking', async (req, res) => {
+  try {
+    const ClickEvent = require('./models/ClickEvent');
+    const Visitor = require('./models/Visitor');
+
+    const totalClicks = await ClickEvent.countDocuments();
+    const totalVisitors = await Visitor.countDocuments();
+    
+    const recentClicks = await ClickEvent.find().limit(5).sort({ timestamp: -1 });
+    const recentVisitors = await Visitor.find().limit(5).sort({ visitTime: -1 });
+
+    res.status(200).json({
+      success: true,
+      debug: {
+        totalClicks,
+        totalVisitors,
+        recentClicks: recentClicks.map(c => ({
+          _id: c._id,
+          productId: c.productId,
+          timestamp: c.timestamp
+        })),
+        recentVisitors: recentVisitors.map(v => ({
+          _id: v._id,
+          sessionId: v.sessionId,
+          visitTime: v.visitTime,
+          pagesVisited: v.pagesVisited
+        }))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Debug error: ' + error.message
+    });
+  }
+});
+
+// ============================================
 // 404 HANDLER
 // ============================================
 app.use((req, res) => {
