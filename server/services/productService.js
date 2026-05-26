@@ -1,210 +1,372 @@
-// Product Service - Business Logic
-
-const Product = require('../models/Product');
-
 /**
- * Get all products with filtering and pagination
+ * Product Service
+ * Business logic for product operations
  */
-const getAllProducts = async (filters = {}) => {
-  const { category, search, page = 1, limit = 12, isActive = true } = filters;
 
-  const query = { isActive };
+const { Product, CATEGORIES, STOCK_STATUS } = require('../models/Product');
+const ValidationService = require('./validationService');
 
-  if (category) {
-    query.category = category;
+class ProductService {
+  /**
+   * Create a new product
+   */
+  static async createProduct(data) {
+    // Validate input data
+    const validation = ValidationService.validateCreateProduct(data);
+
+    if (!validation.valid) {
+      const error = new Error(validation.errors[0]);
+      error.statusCode = 400;
+      error.details = validation.errors;
+      throw error;
+    }
+
+    try {
+      // Create product with validated data
+      const product = await Product.create(validation.data);
+      return product;
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(err => err.message);
+        error.statusCode = 400;
+        error.details = messages;
+      } else if (error.code === 11000) {
+        error.statusCode = 409;
+        error.message = 'Product with similar data already exists';
+      } else {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
   }
 
-  if (search) {
-    query.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-    ];
+  /**
+   * Get all products with filtering and pagination
+   */
+  static async getProducts(filters = {}) {
+    const {
+      category,
+      search,
+      page = 1,
+      limit = 12,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      status = 'published'
+    } = filters;
+
+    // Build query
+    const query = { isActive: true };
+
+    if (category && Object.values(CATEGORIES).includes(category)) {
+      query.category = category;
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (status && ['draft', 'published', 'archived'].includes(status)) {
+      query.status = status;
+    }
+
+    // Build sort object
+    const sortObj = {};
+    const validSortFields = ['createdAt', 'price', 'clicks', 'impressions', 'featured', 'title'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const order = sortOrder === 'asc' ? 1 : -1;
+    sortObj[sortField] = order;
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 12));
+    const skip = (pageNum - 1) * limitNum;
+
+    try {
+      const [products, total] = await Promise.all([
+        Product.find(query)
+          .sort(sortObj)
+          .limit(limitNum)
+          .skip(skip)
+          .lean(),
+        Product.countDocuments(query)
+      ]);
+
+      return {
+        products,
+        pagination: {
+          total,
+          pages: Math.ceil(total / limitNum),
+          currentPage: pageNum,
+          pageSize: limitNum
+        }
+      };
+    } catch (error) {
+      error.statusCode = 500;
+      throw error;
+    }
   }
 
-  const skip = (page - 1) * limit;
+  /**
+   * Get single product by ID
+   */
+  static async getProductById(id) {
+    try {
+      const product = await Product.findById(id).populate('activeOffers', 'title discount expiryDate');
 
-  const products = await Product.find(query)
-    .limit(limit)
-    .skip(skip)
-    .sort({ createdAt: -1 });
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
 
-  const total = await Product.countDocuments(query);
+      // Increment impressions
+      product.impressions += 1;
+      await product.save();
 
-  return {
-    data: products,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit),
-    },
-  };
-};
-
-/**
- * Get single product by ID
- */
-const getProductById = async (id) => {
-  const product = await Product.findById(id);
-  if (!product) {
-    throw new Error('Product not found');
-  }
-  return product;
-};
-
-/**
- * Create new product
- */
-const createProduct = async (productData) => {
-  const product = new Product(productData);
-  return await product.save();
-};
-
-/**
- * Update product
- */
-const updateProduct = async (id, updateData) => {
-  const product = await Product.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!product) {
-    throw new Error('Product not found');
+      return product;
+    } catch (error) {
+      if (error.name === 'CastError') {
+        error.statusCode = 400;
+        error.message = 'Invalid product ID';
+      } else if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
   }
 
-  return product;
-};
+  /**
+   * Update product
+   */
+  static async updateProduct(id, data) {
+    try {
+      // Find product first
+      const product = await Product.findById(id);
 
-/**
- * Delete product (soft delete)
- */
-const deleteProduct = async (id) => {
-  return await updateProduct(id, { isActive: false });
-};
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
 
-/**
- * Get products by category
- */
-const getProductsByCategory = async (category) => {
-  return await Product.find({ category, isActive: true }).sort({ createdAt: -1 });
-};
+      // Validate update data (partial validation)
+      const validation = ValidationService.validateUpdateProduct({
+        ...data,
+        currentPrice: product.price
+      });
 
-/**
- * Get products with stock status
- */
-const getProductsByStockStatus = async (status) => {
-  return await Product.find({ stockStatus: status, isActive: true });
-};
+      if (!validation.valid) {
+        const error = new Error(validation.errors[0]);
+        error.statusCode = 400;
+        error.details = validation.errors;
+        throw error;
+      }
 
-/**
- * Search products
- */
-const searchProducts = async (searchTerm) => {
-  return await Product.find({
-    $or: [
-      { title: { $regex: searchTerm, $options: 'i' } },
-      { description: { $regex: searchTerm, $options: 'i' } },
-      { category: { $regex: searchTerm, $options: 'i' } },
-    ],
-    isActive: true,
-  });
-};
+      // Apply updates
+      Object.assign(product, validation.data);
+      await product.save();
 
-/**
- * Get top products by clicks
- */
-const getTopProductsByClicks = async (limit = 10) => {
-  return await Product.find({ isActive: true })
-    .sort({ clicks: -1 })
-    .limit(limit);
-};
+      return product;
+    } catch (error) {
+      if (error.name === 'CastError') {
+        error.statusCode = 400;
+        error.message = 'Invalid product ID';
+      } else if (error.name === 'ValidationError' && !error.statusCode) {
+        const messages = Object.values(error.errors).map(err => err.message);
+        error.statusCode = 400;
+        error.details = messages;
+      } else if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
+  }
 
-/**
- * Get bottom products by clicks (least popular)
- */
-const getBottomProductsByClicks = async (limit = 10) => {
-  return await Product.find({ isActive: true })
-    .sort({ clicks: 1 })
-    .limit(limit);
-};
+  /**
+   * Delete product (soft delete)
+   */
+  static async deleteProduct(id) {
+    try {
+      const product = await Product.findById(id);
 
-/**
- * Increment product clicks
- */
-const incrementProductClicks = async (productId) => {
-  return await Product.findByIdAndUpdate(
-    productId,
-    { $inc: { clicks: 1 } },
-    { new: true }
-  );
-};
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
 
-/**
- * Increment product impressions
- */
-const incrementProductImpressions = async (productId) => {
-  return await Product.findByIdAndUpdate(
-    productId,
-    { $inc: { impressions: 1 } },
-    { new: true }
-  );
-};
+      product.isActive = false;
+      product.status = 'archived';
+      await product.save();
 
-/**
- * Get product statistics
- */
-const getProductStats = async (productId) => {
-  const product = await getProductById(productId);
-  const ctr = product.impressions > 0 ? (product.clicks / product.impressions) * 100 : 0;
+      return { message: 'Product deleted successfully', id };
+    } catch (error) {
+      if (error.name === 'CastError') {
+        error.statusCode = 400;
+        error.message = 'Invalid product ID';
+      } else if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
+  }
 
-  return {
-    productId,
-    title: product.title,
-    clicks: product.clicks,
-    impressions: product.impressions,
-    ctr: Math.round(ctr * 100) / 100,
-    category: product.category,
-    stockStatus: product.stockStatus,
-  };
-};
+  /**
+   * Bulk delete products
+   */
+  static async bulkDeleteProducts(ids) {
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) {
+        const error = new Error('Product IDs must be a non-empty array');
+        error.statusCode = 400;
+        throw error;
+      }
 
-/**
- * Get all categories
- */
-const getAllCategories = async () => {
-  const categories = await Product.distinct('category', { isActive: true });
-  return categories.sort();
-};
+      const result = await Product.updateMany(
+        { _id: { $in: ids } },
+        { isActive: false, status: 'archived' }
+      );
 
-/**
- * Bulk update products
- */
-const bulkUpdateProducts = async (updates) => {
-  const bulkOps = updates.map((update) => ({
-    updateOne: {
-      filter: { _id: update.id },
-      update: { $set: update.data },
-    },
-  }));
+      return {
+        message: 'Products deleted successfully',
+        deletedCount: result.modifiedCount
+      };
+    } catch (error) {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
+  }
 
-  return await Product.bulkWrite(bulkOps);
-};
+  /**
+   * Record product click
+   */
+  static async recordProductClick(productId) {
+    try {
+      const product = await Product.findById(productId);
 
-module.exports = {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  getProductsByCategory,
-  getProductsByStockStatus,
-  searchProducts,
-  getTopProductsByClicks,
-  getBottomProductsByClicks,
-  incrementProductClicks,
-  incrementProductImpressions,
-  getProductStats,
-  getAllCategories,
-  bulkUpdateProducts,
-};
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      product.clicks += 1;
+
+      if (product.impressions > 0) {
+        product.ctr = Math.round((product.clicks / product.impressions) * 10000) / 100;
+      }
+
+      await product.save();
+      return product;
+    } catch (error) {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get featured products
+   */
+  static async getFeaturedProducts(limit = 10) {
+    try {
+      const products = await Product.find({ featured: true, isActive: true })
+        .limit(parseInt(limit))
+        .lean();
+
+      return products;
+    } catch (error) {
+      error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  /**
+   * Search products
+   */
+  static async searchProducts(searchTerm, limit = 20) {
+    try {
+      if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length === 0) {
+        const error = new Error('Search term is required');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const products = await Product.find(
+        { $text: { $search: searchTerm }, isActive: true },
+        { score: { $meta: 'textScore' } }
+      )
+        .sort({ score: { $meta: 'textScore' } })
+        .limit(parseInt(limit))
+        .lean();
+
+      return products;
+    } catch (error) {
+      error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  /**
+   * Get products by category
+   */
+  static async getProductsByCategory(category, limit = 20) {
+    try {
+      if (!category || !Object.values(CATEGORIES).includes(category)) {
+        const error = new Error(`Invalid category. Must be one of: ${Object.values(CATEGORIES).join(', ')}`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const products = await Product.find({ category, isActive: true })
+        .limit(parseInt(limit))
+        .lean();
+
+      return products;
+    } catch (error) {
+      error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  /**
+   * Get analytics for a product
+   */
+  static async getProductAnalytics(id) {
+    try {
+      const product = await Product.findById(id);
+
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      return {
+        productId: product._id,
+        title: product.title,
+        clicks: product.clicks,
+        impressions: product.impressions,
+        ctr: product.ctr,
+        price: product.price,
+        category: product.category,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt
+      };
+    } catch (error) {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      throw error;
+    }
+  }
+}
+
+module.exports = ProductService;

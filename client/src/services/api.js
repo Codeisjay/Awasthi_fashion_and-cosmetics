@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,23 +13,113 @@ const getSessionId = () => {
   return sessionId;
 };
 
-// Create axios instance
+// ═══════════════════════════════════════════════════════════════
+// REQUEST ID TRACKING
+// ═══════════════════════════════════════════════════════════════
+let requestIdCounter = 0;
+const generateRequestId = () => ++requestIdCounter;
+
+// ═══════════════════════════════════════════════════════════════
+// TRACKING REQUEST DELAY
+// ═══════════════════════════════════════════════════════════════
+const trackingRequestQueue = [];
+let isProcessingTracking = false;
+
+const delayTrackingRequest = (config) => {
+  return new Promise((resolve) => {
+    trackingRequestQueue.push(() => {
+      setTimeout(resolve, 1000); // Delay tracking requests by 1 second
+    });
+    processTrackingQueue();
+  });
+};
+
+const processTrackingQueue = async () => {
+  if (isProcessingTracking || trackingRequestQueue.length === 0) return;
+  
+  isProcessingTracking = true;
+  while (trackingRequestQueue.length > 0) {
+    const task = trackingRequestQueue.shift();
+    await new Promise(resolve => task(() => resolve()));
+  }
+  isProcessingTracking = false;
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CREATE AXIOS INSTANCE
+// ═══════════════════════════════════════════════════════════════
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60 seconds for all requests
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Add token to requests if available
+// ═══════════════════════════════════════════════════════════════
+// REQUEST INTERCEPTOR - Add token and request ID
+// ═══════════════════════════════════════════════════════════════
 apiClient.interceptors.request.use((config) => {
+  // Generate request ID for tracking
+  const requestId = generateRequestId();
+  config.headers['X-Request-ID'] = requestId;
+  config.requestId = requestId;
+  
+  // Add token if available
   const token = localStorage.getItem('authToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Log request (only in development)
+  if (import.meta.env.DEV) {
+    console.log(`[${config.requestId}] ${config.method.toUpperCase()} ${config.url}`);
+  }
+  
+  // Delay tracking requests
+  if (config.url.includes('/track/')) {
+    return delayTrackingRequest(config).then(() => config);
+  }
+  
   return config;
+}, (error) => {
+  console.error('[REQUEST ERROR]', error);
+  return Promise.reject(error);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// RESPONSE INTERCEPTOR - Enhanced error handling
+// ═══════════════════════════════════════════════════════════════
+apiClient.interceptors.response.use(
+  (response) => {
+    // Log response (only in development)
+    if (import.meta.env.DEV) {
+      console.log(`[${response.config.requestId}] ${response.status} OK (${response.statusText})`);
+    }
+    return response;
+  },
+  (error) => {
+    const requestId = error.config?.requestId || 'UNKNOWN';
+    
+    // Enhance error message
+    if (error.response?.data?.message) {
+      if (Array.isArray(error.response.data.message)) {
+        error.response.data.message = error.response.data.message.join(', ');
+      }
+    }
+    
+    // Log error (only in development)
+    if (import.meta.env.DEV) {
+      console.error(`[${requestId}] ${error.response?.status || 'NETWORK'} ERROR`, {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+        code: error.code
+      });
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Product Services
 export const productService = {
@@ -39,8 +128,40 @@ export const productService = {
       params: { category, search, page, limit }
     }),
   getProduct: (id) => apiClient.get(`/products/${id}`),
-  createProduct: (data) => apiClient.post('/products', data),
-  updateProduct: (id, data) => apiClient.put(`/products/${id}`, data),
+  createProduct: (data) => {
+    console.log('\n╔═══════════════════════════════════════════════════╗');
+    console.log('║         [API SERVICE] CREATE PRODUCT              ║');
+    console.log('╚═══════════════════════════════════════════════════╝');
+    console.log('[API SERVICE] data parameter received:', data);
+    console.log('[API SERVICE] data type:', typeof data);
+    console.log('[API SERVICE] data.price:', data.price);
+    console.log('[API SERVICE] typeof data.price:', typeof data.price);
+    console.log('[API SERVICE] "price" in data:', 'price' in data);
+    console.log('[API SERVICE] Object.keys(data):', Object.keys(data));
+    
+    // **CRITICAL**: Verify it's NOT FormData
+    console.log('[API SERVICE] Is FormData?', data instanceof FormData);
+    console.log('[API SERVICE] Is plain object?', data.constructor.name === 'Object');
+    
+    // **ENSURE PRICE IS INCLUDED**: Create new object with explicit type conversion
+    const sanitizedData = {
+      ...data,
+      price: data.price !== undefined ? Number(data.price) : data.price
+    };
+    
+    console.log('[API SERVICE] Sanitized data.price:', sanitizedData.price);
+    console.log('[API SERVICE] Sanitized typeof price:', typeof sanitizedData.price);
+    console.log('[API SERVICE] JSON.stringify(sanitizedData):', JSON.stringify(sanitizedData, null, 2));
+    
+    console.log('[API SERVICE] Making POST request to /products');
+    console.log('[API SERVICE] Calling: apiClient.post("/products", sanitizedData)');
+    
+    return apiClient.post('/products', sanitizedData);
+  },
+  updateProduct: (id, data) => {
+    console.log('[API SERVICE] updateProduct called with ID:', id, 'data:', data);
+    return apiClient.put(`/products/${id}`, data);
+  },
   deleteProduct: (id) => apiClient.delete(`/products/${id}`)
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminNavbar from './AdminNavbar';
 import { productService } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
+import { useFormSubmission } from '../context/FormSubmissionContext';
 import { Edit2, Trash2, Plus, X } from 'lucide-react';
 
 const AdminProducts = () => {
@@ -15,11 +16,16 @@ const AdminProducts = () => {
     image: '',
     category: 'Fashion',
     meeshoLink: '',
+    price: '',
+    originalPrice: '',
+    discountedPrice: '',
     stockStatus: 'in-stock'
   });
   const { addNotification } = useNotification();
+  const { executeSubmission, isFormLocked } = useFormSubmission();
+  const FORM_ID = 'admin-product-form';
 
-  const categories = ['Fashion', 'Cosmetics'];
+  const categories = ['Electronics', 'Fashion', 'Home & Kitchen', 'Sports', 'Books', 'Beauty', 'Toys', 'Automotive'];
 
   useEffect(() => {
     fetchProducts();
@@ -39,12 +45,127 @@ const AdminProducts = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Use executeSubmission to prevent duplicate submissions
     try {
+      await executeSubmission(FORM_ID, async () => {
+        console.log('\n╔═══════════════════════════════════════════════════╗');
+        console.log('║       [FORM SUBMIT] STARTING SUBMISSION            ║');
+        console.log('╚═══════════════════════════════════════════════════╝');
+
+      // Log the entire formData object
+      console.log('[FORM] formData object:', formData);
+      console.log('[FORM] formData.price raw:', formData.price);
+      console.log('[FORM] typeof formData.price:', typeof formData.price);
+      
+      // Validate required fields on client side
+      if (!formData.title?.trim()) {
+        addNotification('Title is required', 'error');
+        return;
+      }
+      if (!formData.description?.trim()) {
+        addNotification('Description is required', 'error');
+        return;
+      }
+      if (!formData.image?.trim()) {
+        addNotification('Image URL is required', 'error');
+        return;
+      }
+      if (!formData.category) {
+        addNotification('Category is required', 'error');
+        return;
+      }
+      if (!formData.meeshoLink?.trim()) {
+        addNotification('Meesho Link is required', 'error');
+        return;
+      }
+
+      // **FRONTEND STEP 1: Validate and parse price**
+      console.log('\n[PRICE PARSE] Starting price parsing...');
+      console.log('[PRICE PARSE] formData.price value:', formData.price);
+      console.log('[PRICE PARSE] formData.price type:', typeof formData.price);
+      
+      // Ensure price is not empty
+      if (!formData.price || formData.price.toString().trim() === '') {
+        console.error('[PRICE PARSE] VALIDATION FAILED - Price is empty');
+        addNotification('❌ Price is required', 'error');
+        return;
+      }
+      
+      const price = parseFloat(formData.price);
+      console.log('[PRICE PARSE] Parsed price:', price);
+      console.log('[PRICE PARSE] parseFloat result:', price);
+      console.log('[PRICE PARSE] isNaN(price):', isNaN(price));
+      
+      if (isNaN(price)) {
+        console.error('[PRICE PARSE] VALIDATION FAILED - Price is not a valid number');
+        addNotification('❌ Price must be a valid number (e.g., 191 or 191.50)', 'error');
+        return;
+      }
+
+      if (price <= 0) {
+        console.error('[PRICE PARSE] VALIDATION FAILED - Price is not greater than 0');
+        addNotification('❌ Price must be greater than 0', 'error');
+        return;
+      }
+
+      console.log('[PRICE PARSE] ✓ Price validation passed:', price);
+
+      // **FRONTEND STEP 2: Build payload object**
+      console.log('\n[PAYLOAD BUILD] Building dataToSend object...');
+      
+      const dataToSend = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        image: formData.image.trim(),
+        category: formData.category,
+        meeshoLink: formData.meeshoLink.trim(),
+        price: Number(price),  // ← EXPLICIT: Convert to Number type
+        stockStatus: formData.stockStatus
+      };
+
+      console.log('[PAYLOAD BUILD] dataToSend created:', dataToSend);
+      console.log('[PAYLOAD BUILD] dataToSend.price:', dataToSend.price);
+      console.log('[PAYLOAD BUILD] typeof dataToSend.price:', typeof dataToSend.price);
+      console.log('[PAYLOAD BUILD] dataToSend.price === number?', typeof dataToSend.price === 'number');
+      console.log('[PAYLOAD BUILD] "price" in dataToSend:', 'price' in dataToSend);
+
+      // Add optional price fields only if they have values
+      if (formData.originalPrice && !isNaN(parseFloat(formData.originalPrice))) {
+        const originalPriceNum = parseFloat(formData.originalPrice);
+        if (originalPriceNum >= 0) {
+          dataToSend.originalPrice = originalPriceNum;
+          console.log('[PAYLOAD BUILD] Added originalPrice:', dataToSend.originalPrice);
+        }
+      }
+      if (formData.discountedPrice && !isNaN(parseFloat(formData.discountedPrice))) {
+        const discountedPriceNum = parseFloat(formData.discountedPrice);
+        if (discountedPriceNum >= 0) {
+          dataToSend.discountedPrice = discountedPriceNum;
+          console.log('[PAYLOAD BUILD] Added discountedPrice:', dataToSend.discountedPrice);
+        }
+      }
+
+      // **FRONTEND STEP 3: Final payload verification before API call**
+      console.log('\n[FINAL VERIFICATION] Before API call...');
+      console.log('[FINAL VERIFICATION] dataToSend object:', dataToSend);
+      console.log('[FINAL VERIFICATION] Object.keys:', Object.keys(dataToSend));
+      console.log('[FINAL VERIFICATION] dataToSend.price exists?', dataToSend.price !== undefined);
+      console.log('[FINAL VERIFICATION] dataToSend.price value:', dataToSend.price);
+      console.log('[FINAL VERIFICATION] dataToSend.price type:', typeof dataToSend.price);
+      console.log('[FINAL VERIFICATION] JSON stringified:\n', JSON.stringify(dataToSend, null, 2));
+      console.log('[FINAL VERIFICATION] Is FormData?', dataToSend instanceof FormData);
+      console.log('[FINAL VERIFICATION] Is plain object?', dataToSend.constructor.name === 'Object');
+
+      console.log('\n[API CALL] Calling API with payload...');
+      
       if (editingId) {
-        await productService.updateProduct(editingId, formData);
+        console.log('[API CALL] UPDATE MODE - ID:', editingId);
+        await productService.updateProduct(editingId, dataToSend);
         addNotification('Product updated successfully', 'success');
       } else {
-        await productService.createProduct(formData);
+        console.log('[API CALL] CREATE MODE - New product');
+        await productService.createProduct(dataToSend);
         addNotification('Product added successfully', 'success');
       }
       setFormData({
@@ -53,13 +174,27 @@ const AdminProducts = () => {
         image: '',
         category: 'Fashion',
         meeshoLink: '',
+        price: '',
+        originalPrice: '',
+        discountedPrice: '',
         stockStatus: 'in-stock'
       });
       setEditingId(null);
       setShowForm(false);
       fetchProducts();
+      });
     } catch (error) {
-      addNotification('Failed to save product', 'error');
+      // Extract detailed error message from axios error
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save product';
+      
+      // Handle array of validation messages
+      let displayMessage = errorMessage;
+      if (Array.isArray(errorMessage)) {
+        displayMessage = errorMessage.join(', ');
+      }
+      
+      console.error('Product save error:', error.response?.data || error);
+      addNotification(displayMessage, 'error');
     }
   };
 
@@ -97,6 +232,9 @@ const AdminProducts = () => {
                   image: '',
                   category: 'Fashion',
                   meeshoLink: '',
+                  price: '',
+                  originalPrice: '',
+                  discountedPrice: '',
                   stockStatus: 'in-stock'
                 });
                 setEditingId(null);
@@ -167,6 +305,56 @@ const AdminProducts = () => {
                     className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none text-sm xs:text-base"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Price (Required)"
+                      value={formData.price}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        console.log('[FORM INPUT] Price field changed:', val, 'type:', typeof val);
+                        setFormData({...formData, price: val})
+                      }}
+                      onBlur={(e) => {
+                        // Ensure price is numeric when user leaves the field
+                        const val = e.target.value;
+                        if (val && !isNaN(parseFloat(val))) {
+                          console.log('[FORM INPUT] Price validated on blur:', val);
+                          setFormData({...formData, price: val});
+                        }
+                      }}
+                      required
+                      step="0.01"
+                      min="0.01"
+                      className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none text-sm xs:text-base w-full"
+                    />
+                    <small className="text-gray-500 mt-1 block">Must be greater than 0</small>
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Original Price (Optional)"
+                      value={formData.originalPrice}
+                      onChange={(e) => setFormData({...formData, originalPrice: e.target.value})}
+                      step="0.01"
+                      min="0"
+                      className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none text-sm xs:text-base w-full"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Discounted Price (Optional)"
+                      value={formData.discountedPrice}
+                      onChange={(e) => setFormData({...formData, discountedPrice: e.target.value})}
+                      step="0.01"
+                      min="0"
+                      className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 outline-none text-sm xs:text-base w-full"
+                    />
+                  </div>
+                </div>
                 
                 <select
                   value={formData.stockStatus}
@@ -180,15 +368,25 @@ const AdminProducts = () => {
                 
                 <div className="flex gap-3 xs:gap-4">
                   <button 
-                    type="submit" 
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-semibold active:scale-95 md:active:scale-100 text-sm xs:text-base"
+                    type="submit"
+                    disabled={isFormLocked(FORM_ID)}
+                    className={`flex-1 px-6 py-3 rounded-lg transition-all duration-300 font-semibold active:scale-95 md:active:scale-100 text-sm xs:text-base ${
+                      isFormLocked(FORM_ID)
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-60'
+                        : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-lg'
+                    }`}
                   >
-                    {editingId ? 'Update' : 'Add'} Product
+                    {isFormLocked(FORM_ID) ? 'Submitting...' : (editingId ? 'Update' : 'Add')} Product
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold active:scale-95 md:active:scale-100 text-sm xs:text-base"
+                    disabled={isFormLocked(FORM_ID)}
+                    className={`flex-1 px-6 py-3 rounded-lg transition-all duration-300 font-semibold active:scale-95 md:active:scale-100 text-sm xs:text-base ${
+                      isFormLocked(FORM_ID)
+                        ? 'bg-gray-300 text-gray-400 cursor-not-allowed opacity-60'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Cancel
                   </button>

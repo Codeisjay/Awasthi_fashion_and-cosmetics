@@ -44,6 +44,8 @@ const corsOptions = {
     const isAllowed = 
       // Allow all Vercel deployment URLs (production and preview)
       normalizedOrigin.endsWith('.vercel.app') ||
+      // Allow all Render deployment URLs
+      normalizedOrigin.endsWith('.onrender.com') ||
       // Allow localhost development servers
       normalizedOrigin === 'http://localhost:3000' ||
       normalizedOrigin === 'http://localhost:5173' ||
@@ -59,8 +61,8 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Length', 'X-JSON-Response', 'X-Total-Count'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Request-ID'],
+  exposedHeaders: ['Content-Length', 'X-JSON-Response', 'X-Total-Count', 'X-Request-ID'],
   optionsSuccessStatus: 200,
   maxAge: 3600 // 1 hour cache for preflight
 };
@@ -75,9 +77,70 @@ app.use(cors(corsOptions));
 // 2. Explicit OPTIONS handler for preflight requests
 app.options('*', cors(corsOptions));
 
-// 3. Body parsers
+// 3. Body parsers - MUST come before routes and auth middleware
+// These parse incoming request bodies into req.body
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// 3.5. Error handler for body parser failures (e.g., malformed JSON)
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('[BODY PARSER ERROR] Malformed JSON received');
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON in request body',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+  next(err);
+});
+
+// 3.7. Request logging middleware for debugging (concise version)
+app.use((req, res, next) => {
+  if ((req.method === 'POST' || req.method === 'PUT') && process.env.NODE_ENV !== 'production') {
+    console.log(`\n[REQUEST] ${req.method} ${req.path}`);
+    console.log('[REQUEST] Content-Type:', req.headers['content-type']);
+    
+    if (req.body && Object.keys(req.body).length > 0) {
+      const bodyKeys = Object.keys(req.body);
+      console.log('[REQUEST] Body fields:', bodyKeys.join(', '));
+      
+      // Log price specifically for product routes
+      if (req.path.includes('/products') && 'price' in req.body) {
+        console.log('[REQUEST] ✓ Price field detected:', req.body.price, `(${typeof req.body.price})`);
+      }
+    } else {
+      console.log('[REQUEST] ⚠ req.body is empty or undefined');
+    }
+  }
+  next();
+});
+
+// 3.8. Request timing middleware - diagnose slow operations
+app.use((req, res, next) => {
+  if (req.method === 'POST' || req.method === 'PUT') {
+    req.startTime = Date.now();
+    
+    // Intercept res.json to log response time
+    const originalJson = res.json;
+    res.json = function(data) {
+      const duration = Date.now() - req.startTime;
+      
+      if (process.env.NODE_ENV !== 'production') {
+        if (duration > 1000) {
+          console.log(`[TIMING] ⚠ SLOW: ${req.method} ${req.path} took ${duration}ms`);
+        } else {
+          console.log(`[TIMING] ✓ ${req.method} ${req.path} completed in ${duration}ms`);
+        }
+      }
+      
+      // Add timing header for debugging
+      res.set('X-Response-Time', `${duration}ms`);
+      return originalJson.call(this, data);
+    };
+  }
+  next();
+});
 
 // 4. Static file serving (uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -106,6 +169,43 @@ app.get('/health', (req, res) => {
     message: 'Server is running',
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString()
+  });
+});
+
+// ============================================
+// DIAGNOSTIC ENDPOINT - Test body parsing
+// ============================================
+app.post('/api/diagnostic/test-body-parser', (req, res) => {
+  console.log('\n╔═══════════════════════════════════════════════════╗');
+  console.log('║        [DIAGNOSTIC] TEST BODY PARSER              ║');
+  console.log('╚═══════════════════════════════════════════════════╝');
+  
+  const diagnostics = {
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length'],
+    bodyExists: req.body !== undefined,
+    bodyType: typeof req.body,
+    bodyKeys: Object.keys(req.body || {}),
+    fullBody: req.body,
+    priceField: req.body?.price,
+    priceType: typeof req.body?.price,
+    allData: {
+      raw_body: JSON.stringify(req.body),
+      individual_fields: {
+        title: req.body?.title,
+        price: req.body?.price,
+        category: req.body?.category,
+        description: req.body?.description
+      }
+    }
+  };
+
+  console.log('[DIAGNOSTIC] Full diagnostics:', JSON.stringify(diagnostics, null, 2));
+  
+  res.status(200).json({
+    success: true,
+    message: 'Body parser diagnostic complete',
+    diagnostics
   });
 });
 

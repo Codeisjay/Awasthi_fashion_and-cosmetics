@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { FormSubmissionProvider } from './context/FormSubmissionContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ToastContainer from './components/Toast';
 
@@ -47,8 +48,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <NotificationProvider>
-          <ToastContainer />
+        <FormSubmissionProvider>
+          <NotificationProvider>
+            <ToastContainer />
           <Routes>
             {/* User Routes */}
             <Route
@@ -106,7 +108,8 @@ function App() {
             {/* Redirect unknown routes */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </NotificationProvider>
+          </NotificationProvider>
+        </FormSubmissionProvider>
       </AuthProvider>
     </Router>
   );
