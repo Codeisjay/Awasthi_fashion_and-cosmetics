@@ -322,6 +322,29 @@ app.get('/api/seed-ml', async (req, res) => {
 });
 
 // ============================================
+// ROOT ROUTE
+// ============================================
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Awasthi Fashion & Cosmetics API Server',
+    status: 'running',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      offers: '/api/offers',
+      analytics: '/api/analytics',
+      tracking: '/api/track',
+      contact: '/api/contact'
+    }
+  });
+});
+
+// ============================================
 // API ROUTES
 // ============================================
 app.use('/api/auth', authRoutes);
