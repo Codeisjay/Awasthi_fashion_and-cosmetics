@@ -8,19 +8,33 @@ const asyncHandler = require('../middleware/asyncHandler');
 // @access  Private (Admin)
 exports.getOverview = asyncHandler(async (req, res, next) => {
   try {
-    console.log('[Analytics] Fetching overview data...');
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║       [ANALYTICS] Fetching Overview Data              ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
 
     // Total visitors
     const totalVisitors = await Visitor.countDocuments();
-    console.log('[Analytics] Total Visitors:', totalVisitors);
+    console.log('[Analytics] ✅ Total Visitors:', totalVisitors);
 
-    // Total clicks
+    // Total clicks - from ClickEvent collection
     const totalClicks = await ClickEvent.countDocuments();
-    console.log('[Analytics] Total Clicks:', totalClicks);
+    console.log('[Analytics] ✅ Total Clicks (ClickEvent):', totalClicks);
+
+    // Total clicks from Product.clicks field (alternative calculation)
+    const productClicksAgg = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalClicks: { $sum: '$clicks' }
+        }
+      }
+    ]);
+    const totalClicksFromProducts = productClicksAgg[0]?.totalClicks || 0;
+    console.log('[Analytics] ✅ Total Clicks (from Product.clicks):', totalClicksFromProducts);
 
     // Total products
     const totalProducts = await Product.countDocuments({ isActive: true });
-    console.log('[Analytics] Total Products:', totalProducts);
+    console.log('[Analytics] ✅ Total Products:', totalProducts);
 
     // Today's visitors - check both visitTime and createdAt
     const today = new Date();
@@ -35,7 +49,7 @@ exports.getOverview = asyncHandler(async (req, res, next) => {
         { lastVisit: { $gte: today, $lt: tomorrow } }
       ]
     });
-    console.log('[Analytics] Today Visitors:', todayVisitors);
+    console.log('[Analytics] ✅ Today Visitors:', todayVisitors);
 
     // Debug: Check visitor counts by field
     const visitTimeCount = await Visitor.countDocuments({ visitTime: { $gte: today } });
@@ -46,8 +60,12 @@ exports.getOverview = asyncHandler(async (req, res, next) => {
     // Debug: Check if there are ANY visitors and clicks
     const allVisitors = await Visitor.find().limit(3).sort({ createdAt: -1 });
     const allClicks = await ClickEvent.find().limit(3).sort({ createdAt: -1 });
-    console.log('[Analytics] Recent visitors:', allVisitors.length);
-    console.log('[Analytics] Recent clicks:', allClicks.length);
+    console.log('[Analytics] Recent visitors found:', allVisitors.length);
+    console.log('[Analytics] Recent clicks found:', allClicks.length);
+    
+    if (allClicks.length > 0) {
+      console.log('[Analytics] Sample click data:', JSON.stringify(allClicks[0], null, 2));
+    }
 
     // Most clicked product
     const mostClicked = await Product.findOne().sort({ clicks: -1 });
@@ -55,11 +73,14 @@ exports.getOverview = asyncHandler(async (req, res, next) => {
     // Least clicked product
     const leastClicked = await Product.findOne({ clicks: { $gt: 0 } }).sort({ clicks: 1 });
 
+    console.log('[Analytics] ✅ Most clicked product:', mostClicked?.title, '(', mostClicked?.clicks, 'clicks)');
+
     res.status(200).json({
       success: true,
       overview: {
         totalVisitors,
         totalClicks,
+        totalClicksFromProducts,
         totalProducts,
         todayVisitors,
         mostClickedProduct: mostClicked,
@@ -67,7 +88,7 @@ exports.getOverview = asyncHandler(async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.error('[Analytics] Error fetching overview:', error);
+    console.error('[Analytics] ❌ Error fetching overview:', error);
     next(error);
   }
 });

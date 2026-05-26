@@ -55,15 +55,19 @@ exports.trackVisit = asyncHandler(async (req, res, next) => {
 exports.trackClick = asyncHandler(async (req, res, next) => {
   const { productId, sessionId, device, browser, userAgent, ipAddress } = req.body;
 
-  console.log('[Tracking] Click - Request body:', { productId, sessionId, device, browser });
+  console.log('\n╔════════════════════════════════════════════════════════╗');
+  console.log('║          [TRACKING CLICK] Request Received            ║');
+  console.log('╚════════════════════════════════════════════════════════╝');
+  console.log('[Tracking] Request body:', JSON.stringify({ productId, sessionId, device, browser }, null, 2));
+  console.log('[Tracking] Database connection state:', require('mongoose').connection.readyState);
 
   if (!productId) {
-    console.warn('[Tracking] Missing productId');
+    console.warn('[Tracking] ❌ Missing productId');
     return res.status(400).json({ success: false, message: 'productId is required' });
   }
 
   if (!sessionId) {
-    console.warn('[Tracking] Missing sessionId');
+    console.warn('[Tracking] ❌ Missing sessionId');
     return res.status(400).json({ success: false, message: 'sessionId is required' });
   }
 
@@ -74,7 +78,7 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
     
     // Default to 'desktop' if device is not one of the valid enum values
     if (!validDevices.includes(normalizedDevice)) {
-      console.warn('[Tracking] Invalid device value:', device, '- defaulting to desktop');
+      console.warn('[Tracking] ⚠️ Invalid device value:', device, '- defaulting to desktop');
       normalizedDevice = 'desktop';
     }
 
@@ -89,19 +93,22 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
       ipAddress: ipAddress || null
     };
 
-    console.log('[Tracking] Creating click event with normalized data:', clickData);
+    console.log('[Tracking] Creating click event:', JSON.stringify(clickData, null, 2));
 
     const clickEvent = await ClickEvent.create(clickData);
-    console.log('[Tracking] Click event created successfully:', clickEvent._id);
+    console.log('[Tracking] ✅ Click event created successfully:', clickEvent._id);
+    console.log('[Tracking] Full saved click data:', JSON.stringify(clickEvent, null, 2));
 
     // Update product clicks count
+    console.log('[Tracking] Looking for product:', productId);
     const product = await Product.findById(productId);
     if (product) {
-      product.clicks = (product.clicks || 0) + 1;
+      const oldClicks = product.clicks || 0;
+      product.clicks = oldClicks + 1;
       await product.save();
-      console.log('[Tracking] Product clicks updated to:', product.clicks);
+      console.log('[Tracking] ✅ Product clicks updated from', oldClicks, 'to', product.clicks);
     } else {
-      console.warn('[Tracking] Product not found:', productId);
+      console.warn('[Tracking] ⚠️ Product not found:', productId);
     }
 
     // Optionally update visitor
@@ -113,17 +120,35 @@ exports.trackClick = asyncHandler(async (req, res, next) => {
       ).catch(err => console.log('[Tracking] Visitor update skipped:', err.message));
     }
 
+    // Verify click was saved
+    const verifyClick = await ClickEvent.findById(clickEvent._id);
+    console.log('[Tracking] ✅ Verification - Click exists in DB:', !!verifyClick);
+
     res.status(201).json({
       success: true,
       message: 'Click tracked successfully',
-      clickEvent
+      clickEvent,
+      verification: {
+        saved: true,
+        productClicks: product?.clicks || 0
+      }
     });
   } catch (error) {
-    console.error('[Tracking] Error tracking click:', error.message);
-    console.error('[Tracking] Error stack:', error.stack);
+    console.error('\n╔════════════════════════════════════════════════════════╗');
+    console.error('║          [TRACKING ERROR] Click Tracking Failed      ║');
+    console.error('╚════════════════════════════════════════════════════════╝');
+    console.error('[Tracking] ❌ Error message:', error.message);
+    console.error('[Tracking] Error name:', error.name);
+    console.error('[Tracking] Error code:', error.code);
+    console.error('[Tracking] Error details:', error.errors || error);
+    console.error('[Tracking] Stack:', error.stack);
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to track click: ' + error.message
+      message: 'Failed to track click',
+      error: error.message,
+      errorName: error.name,
+      errorCode: error.code
     });
   }
 });

@@ -7,15 +7,23 @@ const MLPrediction = require('../models/MLPrediction');
  */
 const generateMLPredictions = async () => {
   try {
-    console.log('[ML Scheduler] Starting ML prediction generation...');
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║        [ML SCHEDULER] Starting ML prediction          ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
     
     // Get all products with their current click data
     const products = await Product.find();
+    console.log(`[ML] Found ${products.length} products in database`);
     
     if (products.length === 0) {
-      console.log('[ML Scheduler] No products found, skipping ML generation');
+      console.log('[ML Scheduler] ⚠️ No products found, skipping ML generation');
       return;
     }
+
+    // Debug: Show click distribution
+    const clickDistribution = products.map(p => ({ title: p.title, clicks: p.clicks || 0 }));
+    console.log('[ML] Click distribution:', JSON.stringify(clickDistribution, null, 2));
+    console.log('[ML] Total clicks across all products:', products.reduce((sum, p) => sum + (p.clicks || 0), 0));
 
     const predictions = products.map((product) => {
       const clicks = product.clicks || 0;
@@ -49,14 +57,28 @@ const generateMLPredictions = async () => {
       };
     });
 
+    console.log('[ML] Generated predictions for all products');
+    console.log('[ML] Sample predictions:', JSON.stringify(predictions.slice(0, 2), null, 2));
+
     // Delete old predictions and insert new ones
     await MLPrediction.deleteMany({});
-    await MLPrediction.insertMany(predictions);
+    console.log('[ML] Deleted old ML predictions');
+    
+    const insertedPredictions = await MLPrediction.insertMany(predictions);
+    console.log(`[ML] ✅ Inserted ${insertedPredictions.length} new ML predictions`);
 
-    console.log(`[ML Scheduler] ✅ Generated ML predictions for ${predictions.length} products`);
+    // Verify predictions were saved
+    const verifyCount = await MLPrediction.countDocuments();
+    console.log(`[ML] ✅ Verification - ${verifyCount} predictions now in database`);
+
     return { success: true, count: predictions.length };
   } catch (error) {
-    console.error('[ML Scheduler] ❌ Error generating ML predictions:', error.message);
+    console.error('\n╔════════════════════════════════════════════════════════╗');
+    console.error('║        [ML SCHEDULER] ML Prediction Generation Failed ║');
+    console.error('╚════════════════════════════════════════════════════════╝');
+    console.error('[ML] ❌ Error message:', error.message);
+    console.error('[ML] Error name:', error.name);
+    console.error('[ML] Stack:', error.stack);
     return { success: false, error: error.message };
   }
 };
