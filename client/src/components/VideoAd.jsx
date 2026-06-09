@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, X, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 
 const VideoAd = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [showVolumeHint, setShowVolumeHint] = useState(true);
+  const [showVolumeHint, setShowVolumeHint] = useState(false);
   const [isInViewport, setIsInViewport] = useState(false);
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -18,7 +18,10 @@ const VideoAd = () => {
         
         if (entry.isIntersecting && videoRef.current) {
           // Start playing when in viewport
-          videoRef.current.play().catch(err => console.log('Auto-play error:', err));
+          const playPromise = videoRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(err => console.log('Auto-play error:', err));
+          }
           setIsPlaying(true);
         } else if (!entry.isIntersecting && videoRef.current) {
           // Stop playing when out of viewport
@@ -58,6 +61,22 @@ const VideoAd = () => {
       videoRef.current.muted = isMuted;
     }
   }, [isMuted]);
+
+  // Handle video ended event to restart if needed
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleEnded = () => {
+      // Video will auto-restart due to loop attribute, but ensure it plays
+      if (isInViewport) {
+        video.play().catch(err => console.log('Play error on ended:', err));
+      }
+    };
+
+    video.addEventListener('ended', handleEnded);
+    return () => video.removeEventListener('ended', handleEnded);
+  }, [isInViewport]);
 
   if (!isVisible) return null;
 
@@ -103,14 +122,16 @@ const VideoAd = () => {
               className="w-full h-full object-cover"
               muted={isMuted}
               controls={false}
+              autoPlay
               loop
+              playsInline
             >
               <source src="/ads/awasthi-fashion-ad.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
 
-            {/* Play Overlay - Shows when not playing */}
-            {!isPlaying && (
+            {/* Play Overlay - Shows when paused by user */}
+            {!isPlaying && isInViewport && (
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/50 flex flex-col items-center justify-center cursor-pointer group">
                 {/* Play Button */}
                 <div className="relative mb-6">
