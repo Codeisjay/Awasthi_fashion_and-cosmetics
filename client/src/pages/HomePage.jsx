@@ -4,6 +4,7 @@ import { trackingService, offerService } from '../services/api';
 import { ChevronRight, Star, Users, Zap, Sparkles, ShoppingBag, TrendingUp } from 'lucide-react';
 import OfferBanner from '../components/OfferBanner';
 import OfferCard from '../components/OfferCard';
+import VideoAd from '../components/VideoAd';
 
 // Animated Text Component
 const AnimatedText = ({ text, className }) => {
@@ -182,6 +183,9 @@ const HomePage = () => {
           </div>
         </div>
       )}
+
+      {/* Video Ad Section */}
+      <VideoAd />
 
       {/* Why Choose Us - Features Section */}
       <div className="py-12 xs:py-16 sm:py-20 bg-white relative overflow-hidden">
