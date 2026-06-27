@@ -179,6 +179,27 @@ const AboutPage = () => {
           </div>
         </div>
 
+        {/* Review Section */}
+        <div className="mb-16">
+          <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 rounded-2xl shadow-xl p-12 text-center">
+            <Award className="w-12 h-12 text-white mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-4" style={elegantStyle}>
+              ⭐ Share Your Experience
+            </h2>
+            <p className="text-xl text-white mb-6 max-w-3xl mx-auto leading-relaxed">
+              We value your feedback and would love to hear about your visit. A quick Google review helps us improve and inspires other customers to trust us too.
+            </p>
+            <a
+              href="https://g.page/r/CX8MZCl85CyyEBM/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-white text-pink-600 px-8 py-4 rounded-lg hover:shadow-lg transition font-semibold text-lg"
+            >
+              Write a Google Review
+            </a>
+          </div>
+        </div>
+
         {/* Mission Section */}
         <div className="mb-16">
           <div className="bg-white rounded-2xl shadow-xl p-12">
