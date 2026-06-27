@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, LogOut, LogIn, User } from 'lucide-react';
+import { Menu, X, LogOut, LogIn, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -27,13 +27,16 @@ const Navbar = () => {
     <nav className="bg-white shadow-md fixed w-full top-0 z-50 border-b border-gray-100 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between h-14 xs:h-16 items-center">
-          <Link to="/" className="flex items-center gap-1 xs:gap-2 group" onClick={() => setIsOpen(false)}>
-            <ShoppingCart className="w-6 xs:w-8 h-6 xs:h-8 text-blue-600 group-hover:animate-bounce-subtle transition-transform" />
-            <div className="hidden xs:block">
-              <p className="text-xs font-semibold text-blue-600">LUXURY</p>
-              <span className="text-sm xs:text-base sm:text-lg font-bold text-gray-900" style={{fontFamily: 'Georgia, serif', fontStyle: 'italic'}}>Awasthi Fashion & Cosmetics</span>
+          <Link to="/" className="flex items-center gap-2 xs:gap-3 group" onClick={() => setIsOpen(false)}>
+            <img 
+              src="/logo.png" 
+              alt="Awasthi's Beauty Parlour & Cosmetics" 
+              className="h-12 xs:h-14 w-auto object-contain" 
+              style={{maxHeight: '60px'}}
+            />
+            <div className="hidden md:block">
+              <span className="text-sm xs:text-base sm:text-lg font-bold text-gray-900" style={{fontFamily: 'Georgia, serif'}}>Awasthi's</span>
             </div>
-            <span className="text-xs xs:hidden text-gray-700 font-bold">Awasthi's</span>
           </Link>
 
           {/* Desktop Navigation */}
