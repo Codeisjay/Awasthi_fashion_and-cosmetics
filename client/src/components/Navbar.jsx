@@ -29,7 +29,7 @@ const Navbar = () => {
         <div className="flex justify-between h-14 xs:h-16 items-center">
           <Link to="/" className="flex items-center gap-2 xs:gap-3 group" onClick={() => setIsOpen(false)}>
             <img 
-              src="/logo.png" 
+              src="/logo.jpeg" 
               alt="Awasthi's Beauty Parlour & Cosmetics" 
               className="h-12 xs:h-14 w-auto object-contain" 
               style={{maxHeight: '60px'}}
