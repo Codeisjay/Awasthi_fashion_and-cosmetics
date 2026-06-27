@@ -167,7 +167,7 @@ const AboutPage = () => {
               
               <div className="mt-8">
                 <a 
-                  href="https://www.meesho.com"
+                  href="https://www.meesho.com/AwasthiFashionandcosmetics?ms=2"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block bg-gradient-to-r from-orange-400 to-red-500 text-white px-8 py-4 rounded-lg hover:shadow-lg transition font-semibold text-lg"
