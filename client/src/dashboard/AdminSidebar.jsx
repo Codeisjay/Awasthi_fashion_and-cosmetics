@@ -17,6 +17,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     { label: 'Dashboard', path: '/admin/dashboard' },
     { label: 'Products', path: '/admin/products' },
     { label: 'Offers & Promotions', path: '/admin/offers' },
+    { label: 'Posts', path: '/admin/posts' },
     { label: 'ML Insights', path: '/admin/insights' }
   ];
 

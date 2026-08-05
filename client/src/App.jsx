@@ -14,6 +14,8 @@ import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OffersPage from './pages/OffersPage';
 import OfferDetailsPage from './pages/OfferDetailsPage';
+import PostsPage from './pages/PostsPage';
+import UserLoginPage from './pages/UserLoginPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 
@@ -23,6 +25,7 @@ import AdminDashboard from './dashboard/AdminDashboard';
 import AdminProducts from './dashboard/AdminProducts';
 import AdminInsights from './dashboard/AdminInsights';
 import AdminOffersPage from './pages/AdminOffersPage';
+import AdminPostsPage from './pages/AdminPostsPage';
 
 function App() {
   const [topOffers, setTopOffers] = useState([]);
@@ -65,6 +68,8 @@ function App() {
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/offers" element={<OffersPage />} />
                     <Route path="/offers/:id" element={<OfferDetailsPage />} />
+                    <Route path="/posts" element={<PostsPage />} />
+                    <Route path="/login" element={<UserLoginPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                   </Routes>
@@ -95,6 +100,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminOffersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/posts"
+              element={
+                <ProtectedRoute>
+                  <AdminPostsPage />
                 </ProtectedRoute>
               }
             />

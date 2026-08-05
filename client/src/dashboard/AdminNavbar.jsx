@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Menu, X, LogOut, LayoutDashboard, Package, Tag, Brain, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Package, Tag, Brain, Image, ChevronDown } from 'lucide-react';
 
 const AdminNavbar = () => {
   const { logout, user } = useAuth();
@@ -20,6 +20,7 @@ const AdminNavbar = () => {
     { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Products', path: '/admin/products', icon: Package },
     { label: 'Offers', path: '/admin/offers', icon: Tag },
+    { label: 'Posts', path: '/admin/posts', icon: Image },
     { label: 'ML Insights', path: '/admin/insights', icon: Brain }
   ];
 

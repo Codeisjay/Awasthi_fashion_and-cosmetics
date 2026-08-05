@@ -307,6 +307,25 @@ export const offerService = {
     apiClient.post('/offers/admin/auto-activate')
 };
 
+export const postService = {
+  getPosts: () => apiClient.get('/posts'),
+  getPostById: (id) => apiClient.get(`/posts/${id}`),
+  addComment: (postId, commentText, name, profileImage) =>
+    apiClient.post(`/posts/${postId}/comments`, { commentText, name, profileImage }),
+  createPost: (data) => apiClient.post('/posts', data),
+  getAdminPosts: () => apiClient.get('/posts/admin'),
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return apiClient.post('/posts/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  deletePost: (id) => apiClient.delete(`/posts/${id}`)
+};
+
 // Utility function to get device info
 export const getDeviceInfo = () => {
   const userAgent = navigator.userAgent;

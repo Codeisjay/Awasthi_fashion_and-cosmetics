@@ -45,7 +45,7 @@ router.post('/apply', applyOffer);
 // ============================================
 
 // Image upload endpoint (before other routes)
-router.post('/upload-image', protect, adminOnly, upload, uploadOfferImage);
+router.post('/upload-image', protect, adminOnly, upload.single('image'), uploadOfferImage);
 
 // Get offer analytics (must be BEFORE /:id route)
 router.get('/analytics', protect, adminOnly, getOfferAnalytics);

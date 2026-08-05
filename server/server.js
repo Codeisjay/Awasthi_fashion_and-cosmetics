@@ -17,6 +17,7 @@ const trackingRoutes = require('./routes/trackingRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const mlRoutes = require('./routes/mlRoutes');
 const offerRoutes = require('./routes/offerRoutes');
+const postRoutes = require('./routes/postRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
@@ -354,6 +355,7 @@ app.use('/api/track', trackingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ml', mlRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/posts', postRoutes);
 app.use('/api/contact', contactRoutes);
 
 // ============================================
