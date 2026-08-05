@@ -13,6 +13,7 @@ import { offerService } from './services/api';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OffersPage from './pages/OffersPage';
+import OfferDetailsPage from './pages/OfferDetailsPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 
@@ -63,6 +64,7 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/offers" element={<OffersPage />} />
+                    <Route path="/offers/:id" element={<OfferDetailsPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                   </Routes>

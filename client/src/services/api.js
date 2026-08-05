@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const ASSET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 // Initialize session ID
 const getSessionId = () => {
@@ -199,7 +200,6 @@ export const userAuthService = {
   logoutUser: () => apiClient.post('/auth/user/logout')
 };
 
-// Tracking Services
 export const trackingService = {
   trackVisit: (page) => {
     const sessionId = getSessionId();

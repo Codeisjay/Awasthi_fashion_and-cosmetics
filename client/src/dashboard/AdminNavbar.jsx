@@ -9,6 +9,7 @@ const AdminNavbar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userNavOpen, setUserNavOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -20,6 +21,14 @@ const AdminNavbar = () => {
     { label: 'Products', path: '/admin/products', icon: Package },
     { label: 'Offers', path: '/admin/offers', icon: Tag },
     { label: 'ML Insights', path: '/admin/insights', icon: Brain }
+  ];
+
+  const userNavItems = [
+    { label: 'Home', path: '/' },
+    { label: 'Products', path: '/products' },
+    { label: 'Offers', path: '/offers' },
+    { label: 'About', path: '/about' },
+    { label: 'Contact', path: '/contact' }
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -61,6 +70,30 @@ const AdminNavbar = () => {
                 </Link>
               );
             })}
+
+            <div className="relative">
+              <button
+                onClick={() => setUserNavOpen(!userNavOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:bg-white/10"
+              >
+                <span className="text-sm font-medium">User Site</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {userNavOpen && (
+                <div className="absolute top-full mt-2 right-0 w-48 rounded-xl bg-white text-gray-900 shadow-xl overflow-hidden z-50">
+                  {userNavItems.map(item => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setUserNavOpen(false)}
+                      className="block px-4 py-3 text-sm hover:bg-gray-100 transition"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Section - User Menu and Mobile Toggle */}
@@ -142,16 +175,28 @@ const AdminNavbar = () => {
                       <p className="font-semibold text-white">{user?.name || 'Admin'}</p>
                       <p className="text-blue-300 text-xs">{user?.email}</p>
                     </div>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 xs:px-4 py-3 text-red-200 hover:bg-red-500/30 transition-colors text-left text-sm font-semibold rounded-lg mx-2 xs:mx-3"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
+                    <div className="space-y-2">
+                      {userNavItems.map(item => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsOpen(false)}
+                          className="block w-full text-left px-3 xs:px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition text-sm xs:text-base font-semibold"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 xs:px-4 py-3 text-red-200 hover:bg-red-500/30 transition-colors text-left text-sm font-semibold rounded-lg bg-red-600"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

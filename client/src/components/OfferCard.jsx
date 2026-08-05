@@ -1,6 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, Tag, TrendingUp, Clock, Zap } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
+import { ASSET_BASE_URL } from '../services/api';
 
 const OfferCard = ({ offer }) => {
   const isPercentage = offer.discountType === 'percentage';
@@ -50,6 +52,15 @@ const OfferCard = ({ offer }) => {
 
   const isFlash = offer.offerType === 'flash';
 
+  const getAssetUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/uploads')) {
+      return `${ASSET_BASE_URL}${url}`;
+    }
+    return url;
+  };
+
   return (
     <div className={`
       bg-white rounded-2xl shadow-md hover:shadow-2xl 
@@ -62,7 +73,7 @@ const OfferCard = ({ offer }) => {
         {offer.bannerImage ? (
           <>
             <img
-              src={offer.bannerImage}
+              src={getAssetUrl(offer.bannerImage)}
               alt={offer.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               loading="lazy"
@@ -160,17 +171,20 @@ const OfferCard = ({ offer }) => {
         )}
 
         {/* CTA Button with Animation */}
-        <button className={`
-          w-full mt-auto bg-gradient-to-r ${getOfferTypeColor(offer.offerType)}
-          text-white py-2 xs:py-3 rounded-xl font-bold 
-          hover:shadow-2xl transition-all duration-300 
-          transform hover:scale-105 active:scale-95 md:active:scale-100
-          ${isFlash ? 'animate-pulse' : ''}
-          flex items-center justify-center gap-2 text-xs xs:text-sm
-        `}>
+        <Link
+          to={`/offers/${offer._id}`}
+          className={`
+            w-full mt-auto bg-gradient-to-r ${getOfferTypeColor(offer.offerType)}
+            text-white py-2 xs:py-3 rounded-xl font-bold 
+            hover:shadow-2xl transition-all duration-300 
+            transform hover:scale-105 active:scale-95 md:active:scale-100
+            ${isFlash ? 'animate-pulse' : ''}
+            flex items-center justify-center gap-2 text-xs xs:text-sm
+          `}
+        >
           <Zap className="w-3 xs:w-4 h-3 xs:h-4" />
           View Details
-        </button>
+        </Link>
       </div>
     </div>
   );
