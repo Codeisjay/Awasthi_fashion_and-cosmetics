@@ -51,6 +51,7 @@ const OfferDetailsPage = () => {
   }
 
   const isFlash = offer.offerType === 'flash';
+  const detailBannerImage = offer.bannerImage || offer.mobilebannerImage || offer.mobileBannerImage;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 pt-24 pb-16">
@@ -75,9 +76,9 @@ const OfferDetailsPage = () => {
           <div className="space-y-8">
             <div className="relative overflow-hidden rounded-[2rem] shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/40" />
-              {offer.bannerImage ? (
+              {detailBannerImage ? (
                 <img
-                  src={getAssetUrl(offer.bannerImage)}
+                  src={getAssetUrl(detailBannerImage)}
                   alt={offer.title}
                   className="w-full h-[24rem] sm:h-[30rem] object-cover"
                 />
@@ -107,9 +108,9 @@ const OfferDetailsPage = () => {
               <div className="bg-white p-6 rounded-[1.75rem] shadow-lg border border-gray-200">
                 <p className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">Valid Until</p>
                 <p className="text-base font-semibold text-gray-900">{new Date(offer.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                <p className="mt-2 text-sm text-orange-600 font-semibold flex items-center gap-2">
+                <div className="mt-2 text-sm text-orange-600 font-semibold flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> <CountdownTimer endDate={offer.endDate} compact={true} />
-                </p>
+                </div>
               </div>
               <div className="bg-white p-6 rounded-[1.75rem] shadow-lg border border-gray-200">
                 <p className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">Minimum Spend</p>
