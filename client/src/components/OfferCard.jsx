@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Tag, TrendingUp, Clock, Zap } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
-import { ASSET_BASE_URL } from '../services/api';
+import { getAssetUrl } from '../services/api';
 
 const OfferCard = ({ offer }) => {
   const isPercentage = offer.discountType === 'percentage';
@@ -51,15 +51,6 @@ const OfferCard = ({ offer }) => {
   };
 
   const isFlash = offer.offerType === 'flash';
-
-  const getAssetUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/uploads')) {
-      return `${ASSET_BASE_URL}${url}`;
-    }
-    return url;
-  };
 
   return (
     <div className={`

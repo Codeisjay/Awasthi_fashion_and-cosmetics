@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
-import { offerService, ASSET_BASE_URL } from '../services/api';
+import { offerService, getAssetUrl } from '../services/api';
 
 const OfferBanner = () => {
   const [offers, setOffers] = useState([]);
@@ -56,15 +56,6 @@ const OfferBanner = () => {
   }
 
   const currentOffer = offers[currentOfferIndex];
-
-  const getAssetUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/uploads')) {
-      return `${ASSET_BASE_URL}${url}`;
-    }
-    return url;
-  };
 
   return (
     <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden shadow-2xl group">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { offerService, ASSET_BASE_URL } from '../services/api';
+import { offerService, getAssetUrl } from '../services/api';
 import { ArrowLeft, Calendar, Tag, Zap } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer';
 
@@ -77,7 +77,7 @@ const OfferDetailsPage = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/40" />
               {offer.bannerImage ? (
                 <img
-                  src={offer.bannerImage.startsWith('/uploads') ? `${ASSET_BASE_URL}${offer.bannerImage}` : offer.bannerImage}
+                  src={getAssetUrl(offer.bannerImage)}
                   alt={offer.title}
                   className="w-full h-[24rem] sm:h-[30rem] object-cover"
                 />

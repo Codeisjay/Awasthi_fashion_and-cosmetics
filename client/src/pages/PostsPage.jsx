@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { postService, ASSET_BASE_URL } from '../services/api';
+import { postService, getAssetUrl } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { MessageCircle, Image, User, Heart, ArrowRightCircle } from 'lucide-react';
 
@@ -29,13 +29,6 @@ const PostsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getAssetUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/uploads')) return `${ASSET_BASE_URL}${url}`;
-    return url;
   };
 
   const handleCommentChange = (postId, value) => {
